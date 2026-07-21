@@ -1,0 +1,24 @@
+{{- /*
+  Folio "Receipts of thought" badge.
+  Drop into your Hugo theme and call {{ partial "receipts-badge.html" . }}
+  in single.html where you want the badge.
+
+  It links a reader to the public verifier for this post's receipts
+  bundle. Point it at the bundle URL via a `receipts` page param, or
+  publish the bundle beside the post as `receipts.json` (the default).
+*/ -}}
+{{- $receipts := .Params.receipts | default (printf "%sreceipts.json" .Permalink) -}}
+{{- with $receipts -}}
+<a class="folio-receipts-badge"
+   href="https://receiptsofthought.com/?src={{ . | urlquery }}"
+   target="_blank" rel="noopener"
+   title="See how this piece was made">
+  <span aria-hidden="true">◆</span> Receipts of thought
+</a>
+<style>
+.folio-receipts-badge{display:inline-flex;align-items:center;gap:.4em;
+  font:500 12px/1 system-ui,sans-serif;color:#8a6a2c;text-decoration:none;
+  border:1px solid rgba(138,106,44,.35);border-radius:4px;padding:.4em .7em}
+.folio-receipts-badge:hover{background:rgba(201,168,106,.1)}
+</style>
+{{- end -}}

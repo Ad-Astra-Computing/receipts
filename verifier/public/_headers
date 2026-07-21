@@ -1,0 +1,10 @@
+# Cloudflare Pages headers. The verifier is static and does all
+# verification client-side. It makes no network requests at all (the
+# sample is inlined, dropped files are read locally), so connect-src
+# is 'none'.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Content-Security-Policy: default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Permissions-Policy: geolocation=(), camera=(), microphone=()

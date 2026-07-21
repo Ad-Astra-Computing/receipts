@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Receipts of thought">
+  <!-- A receipt: rounded top, torn perforated bottom, ink lines. -->
+  <path d="M6 3 h20 v21 l-2.5 2 -2.5 -2 -2.5 2 -2.5 -2 -2.5 2 -2.5 -2 -2.5 2 -2.5 -2 z"
+        fill="#f2f1ee" stroke="#1a1a1e" stroke-width="2" stroke-linejoin="round"/>
+  <line x1="10" y1="9"  x2="22" y2="9"  stroke="#1a1a1e" stroke-width="2" stroke-linecap="round"/>
+  <line x1="10" y1="13" x2="22" y2="13" stroke="#1a1a1e" stroke-width="2" stroke-linecap="round"/>
+  <line x1="10" y1="17" x2="18" y2="17" stroke="#1a1a1e" stroke-width="2" stroke-linecap="round"/>
+</svg>

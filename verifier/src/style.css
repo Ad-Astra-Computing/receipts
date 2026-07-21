@@ -1,0 +1,291 @@
+/* receiptsofthought.com — ink-and-paper ledger, composed on phi.
+   Palette + type reuse Folio's brand tokens. */
+:root {
+  /* Dark page: neutral near-blacks, no warm cast. No accent hue. */
+  --ink-0: #0b0b0d;
+  --ink-1: #17171a;
+  --ink-2: #232327;
+  --bone-0: #f0efed;
+  --bone-1: #b4b3b7;
+  --bone-2: #85848b;
+  --hairline: rgba(240, 239, 237, 0.09);
+  --good: #6aa66c;
+  --bad: #e08a6a;
+  --focus: #6f6f77; /* neutral, >=3:1 on both dark page and paper */
+
+  /* The receipt is literal paper: a light record on the dark page.
+     Cool white, no warm cast. Edges and rules are ink + hairline,
+     not a color; pass/fail is the only place color appears. */
+  --paper-0: #f2f1ee;
+  --paper-1: #e7e6e1;
+  --paper-tape: #e0dfd9;
+  --paper-ink: #1a1a1e;
+  --paper-ink-muted: #56555a;
+  --paper-ink-tertiary: #74737a;
+  --paper-good: #3f7047;
+  --paper-good-wash: #3f704714;
+  --paper-bad: #99402f;
+  --paper-bad-wash: #99402f17;
+
+  /* Type scale, base 17px x phi (1.618) */
+  --fs--2: 0.656rem;
+  --fs--1: 0.8125rem;
+  --fs-0: 1.0625rem;
+  --fs-1: 1.719rem;
+  --fs-2: 2.781rem;
+  --fs-3: clamp(2.781rem, 1.5rem + 4.5vw, 4.5rem);
+
+  /* Spacing on the Fibonacci approximation of phi */
+  --s0: 8px;
+  --s1: 13px;
+  --s2: 21px;
+  --s3: 34px;
+  --s4: 55px;
+  --s5: 89px;
+  --s6: 144px;
+
+  --measure: 61.8ch;
+  --receipt-w: 424px;
+  --lh: 1.618;
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-3: 8px;
+  --shadow: 0 18px 48px #00000052;
+
+  --font-serif: "Charter", "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--ink-0);
+  color: var(--bone-0);
+  font-family: var(--font-sans);
+  font-size: var(--fs-0);
+  line-height: var(--lh);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a { color: inherit; text-decoration: underline; text-underline-offset: 2px;
+    text-decoration-thickness: 1px; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    overflow-wrap: anywhere; }
+a:hover { text-decoration-color: currentColor; }
+code { font-family: var(--font-mono); font-size: 0.9em; }
+h1, h2 { font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.01em; }
+.dot { color: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0);
+  white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: absolute; left: -999px; top: 8px;
+  background: var(--ink-2); color: var(--bone-0);
+  padding: var(--s0) var(--s1); border-radius: var(--r-2); z-index: 10;
+}
+.skip-link:focus { left: 8px; }
+
+/* Masthead */
+.masthead {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--s2); flex-wrap: wrap;
+  max-width: 1080px; margin: 0 auto; padding: var(--s2) var(--s3);
+  border-bottom: 1px solid var(--hairline);
+}
+.wordmark { font-family: var(--font-serif); font-size: var(--fs-1); }
+.masthead nav { display: flex; gap: var(--s2); font-size: var(--fs--1); }
+.masthead nav a { color: var(--bone-1); text-decoration: none; }
+.masthead nav a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+main { max-width: 1080px; margin: 0 auto; padding: 0 var(--s3); }
+
+/* Hero: 38.2 / 61.8 on desktop, stacked on phone */
+#hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s4);
+  align-items: center;
+  min-height: 92svh;
+  padding: var(--s5) 0 var(--s6);
+}
+.statement { max-width: var(--measure); }
+#hero-h { font-size: var(--fs-2); margin: 0 0 var(--s2); line-height: 1.1; }
+.dek { color: var(--bone-1); max-width: 40ch; margin: 0 0 var(--s2); }
+.meta { font-family: var(--font-mono); font-size: var(--fs--1); color: var(--bone-2); margin: 0; }
+
+/* Receipt card: the hero AND the dropzone */
+.receipt {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: var(--receipt-w);
+  margin: 0;
+  background: var(--paper-0);
+  color: var(--paper-ink);
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-top: 2px solid var(--paper-ink); /* the receipt's header rule */
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  overflow: hidden;
+}
+.receipt.over { border-color: var(--paper-ink); }
+/* The file input is visually hidden, so surface its keyboard focus on
+   the card itself. */
+.receipt:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 3px; }
+.receipt.over::before,
+.receipt.over::after {
+  content: ""; position: absolute; width: 18px; height: 18px;
+  border: 2px solid var(--paper-ink);
+}
+.receipt.over::before { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
+.receipt.over::after { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
+.receipt-inner { padding: var(--s2); }
+
+.playhead {
+  position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: var(--paper-ink-muted); opacity: 0; transform: translateY(0);
+}
+.receipt.animate .playhead { animation: sweep 1.4s ease-out forwards; }
+@keyframes sweep {
+  0% { opacity: 0.9; transform: translateY(0); }
+  90% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(360px); }
+}
+
+.r-head { border-bottom: 1px solid rgba(0, 0, 0, 0.12); padding-bottom: var(--s1); margin-bottom: var(--s1); }
+.r-title { font-family: var(--font-serif); font-size: var(--fs-1); color: var(--paper-ink); }
+.r-key { font-family: var(--font-mono); font-size: var(--fs--2); color: var(--paper-ink-tertiary); margin-top: 2px; }
+
+.r-checks { list-style: none; padding: 0; margin: 0 0 var(--s1); display: flex; flex-direction: column; gap: 6px; }
+.r-check { display: flex; align-items: center; gap: var(--s0); font-size: var(--fs--1); color: var(--paper-ink); }
+.r-glyph { font-weight: 700; width: 16px; text-align: center; }
+.r-check.ok .r-glyph { color: var(--paper-good); }
+.r-check.bad .r-glyph { color: var(--paper-bad); }
+.receipt.animate .r-check { opacity: 0; transform: translateY(4px); animation: stamp 0.15s ease-out forwards; }
+.receipt.animate .r-check:nth-child(1) { animation-delay: 0.1s; }
+.receipt.animate .r-check:nth-child(2) { animation-delay: 0.19s; }
+.receipt.animate .r-check:nth-child(3) { animation-delay: 0.28s; }
+.receipt.animate .r-check:nth-child(4) { animation-delay: 0.37s; }
+@keyframes stamp { to { opacity: 1; transform: translateY(0); } }
+
+.r-verdict {
+  font-size: var(--fs--1); margin: 0 0 var(--s1); padding: var(--s0) var(--s1);
+  border-radius: var(--r-2); border-left: 2px solid var(--paper-ink);
+  color: var(--paper-ink);
+}
+.r-verdict.good { background: var(--paper-good-wash); }
+.r-verdict.bad { background: var(--paper-bad-wash); border-left-color: var(--paper-bad); }
+
+.curve { margin: 0 0 var(--s1); }
+.curve svg { width: 100%; height: 60px; background: var(--paper-1); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: var(--r-1); display: block; }
+/* Solid by default. The dash pattern used for the draw-on animation is
+   applied only while animating, so the resting line is never broken. */
+.curve-path { stroke: var(--paper-ink); }
+.curve-fill { fill: var(--paper-ink); opacity: 0.1; }
+.curve-label {
+  font-family: var(--font-mono); font-size: var(--fs--2); color: var(--paper-ink-tertiary);
+  margin-top: 4px; text-align: right;
+}
+.receipt.animate .curve-path {
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: draw 1.2s ease-out 0.4s forwards;
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+.tape-body {
+  font-family: var(--font-serif); font-size: var(--fs--1); line-height: var(--lh);
+  white-space: pre-wrap; word-break: break-word; color: var(--paper-ink);
+  background: var(--paper-1); border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--r-2); padding: var(--s1); margin: 0 0 var(--s1);
+  max-height: 160px; overflow: auto;
+}
+mark.ai {
+  color: inherit;
+  background: repeating-linear-gradient(45deg,
+    var(--paper-tape), var(--paper-tape) 6px,
+    #d6d5cf 6px, #d6d5cf 12px);
+  border-bottom: 1px solid var(--paper-ink-tertiary); border-radius: 2px; padding: 0 1px;
+}
+
+.r-claims { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s0); }
+.r-claims li { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs--2); }
+.r-claim-x { color: var(--paper-ink); }
+.r-claim-src { font-family: var(--font-mono); font-size: var(--fs--2); color: var(--paper-ink-muted); }
+
+.drop-hint { color: var(--bone-2); font-size: var(--fs--1); max-width: var(--receipt-w); margin: var(--s1) 0 0; }
+.browse { color: var(--bone-0); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.browse:hover { text-decoration-thickness: 2px; }
+
+/* Content sections */
+section { padding: var(--s5) 0; border-top: 1px solid var(--hairline); }
+/* Alternating full-bleed bands for editorial rhythm (Codex). The
+   box-shadow spread paints the band edge-to-edge; clip-path stops it
+   bleeding vertically. No DOM wrapper needed. */
+.band {
+  background: var(--ink-1);
+  box-shadow: 0 0 0 100vmax var(--ink-1);
+  clip-path: inset(0 -100vmax);
+  border-top-color: transparent;
+}
+section h2 { font-size: var(--fs-1); margin: 0 0 var(--s2); }
+section p { max-width: var(--measure); color: var(--bone-1); margin: 0 0 var(--s1); }
+#thesis p { color: var(--bone-0); }
+
+.anatomy { display: grid; gap: var(--s2); margin: 0; }
+.anatomy dt { font-family: var(--font-mono); font-size: var(--fs--1); color: var(--bone-1); text-transform: lowercase; }
+.anatomy dd { margin: 4px 0 0; color: var(--bone-1); max-width: 52ch; }
+
+.ledger { border-collapse: collapse; width: 100%; max-width: var(--measure); font-size: var(--fs--1); }
+.ledger th, .ledger td { text-align: left; padding: var(--s0) var(--s1); border-bottom: 1px solid var(--hairline); }
+.ledger th { color: var(--bone-2); font-weight: 500; font-family: var(--font-mono); font-size: var(--fs--2); text-transform: uppercase; letter-spacing: 0.06em; }
+.ledger td:last-child { font-family: var(--font-mono); color: var(--bone-2); }
+
+.cta { text-align: left; }
+.folio-link {
+  display: inline-block; margin-top: var(--s1);
+  padding: var(--s0) var(--s2); border: 1px solid var(--bone-1);
+  border-radius: var(--r-2); color: var(--bone-0); text-decoration: none;
+}
+.folio-link:hover { background: rgba(240, 239, 237, 0.06); border-color: var(--bone-0); }
+
+footer { max-width: 1080px; margin: 0 auto; padding: var(--s3); border-top: 1px solid var(--hairline); color: var(--bone-2); font-size: var(--fs--1); }
+footer .fine { font-size: var(--fs--2); }
+.credit { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 var(--s1); }
+.credit .sep, .credit .by { color: var(--bone-2); }
+.adastra-link { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.adastra-link:hover span { text-decoration: underline; text-underline-offset: 2px; }
+.adastra { flex-shrink: 0; }
+
+/* Responsive: phi breakpoints 38.2em / 61.8em */
+@media (min-width: 61.8em) {
+  #hero { grid-template-columns: 38.2fr 61.8fr; }
+  #hero-h { font-size: var(--fs-3); }
+  #anatomy { }
+  .anatomy { grid-template-columns: 1fr 1fr; gap: var(--s3) var(--s4); }
+}
+@media (max-width: 38.2em) {
+  section { padding: var(--s5) 0; }
+  .drop-hint .on-pointer { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .receipt.animate .playhead,
+  .receipt.animate .r-check,
+  .receipt.animate .curve-path { animation: none; }
+  .receipt.animate .r-check { opacity: 1; transform: none; }
+  .receipt.animate .curve-path { stroke-dasharray: none; stroke-dashoffset: 0; }
+}

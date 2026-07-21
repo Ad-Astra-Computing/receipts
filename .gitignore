@@ -1,0 +1,22 @@
+# Node / verifier
+node_modules/
+dist/
+.wrangler/
+*.log
+
+# Go (arrives in Stage 2)
+*.test
+*.out
+coverage.*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Nix / direnv
+.direnv/
+result
+result-*
