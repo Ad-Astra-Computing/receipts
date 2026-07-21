@@ -9,6 +9,8 @@
 // separators here diverge from the specification, the test suite
 // (verify.test.ts) fails against a genuine signed fixture.
 
+import { canonicalize } from "./jcs";
+
 export interface Signature {
   alg: string;
   public_key: string;
@@ -119,6 +121,58 @@ async function signingDigest(b: Bundle): Promise<Uint8Array> {
   return sha256(buf);
 }
 
+// The embedded C2PA credential's own signing digest, per SPEC.md
+// section 7. The signed payload is the credential with ONLY
+// signature.value removed (signature.alg and signature.public_key stay
+// covered), canonicalized with RFC 8785 JCS and prefixed with a domain
+// tag so this signature can never be replayed against another payload.
+//
+//   credDigest = SHA-256( UTF8("folio.c2pa.sig.v1") || UTF8(JCS(cred')) )
+//
+// where cred' is a deep copy of the credential with signature.value
+// deleted.
+export const CRED_SIG_TAG = "folio.c2pa.sig.v1";
+
+async function credentialDigest(cred: Credential): Promise<Uint8Array> {
+  const copy = structuredClone(cred) as {
+    signature?: { value?: unknown };
+    [k: string]: unknown;
+  };
+  if (copy.signature && typeof copy.signature === "object") {
+    delete copy.signature.value;
+  }
+  const canonical = canonicalize(copy);
+  return sha256(enc.encode(CRED_SIG_TAG + canonical));
+}
+
+// A shared Ed25519 verify helper. Rejects any algorithm other than
+// Ed25519 and any key or signature of the wrong raw length, so a
+// truncated or oversized value can never slip past as "verified".
+async function ed25519Verify(
+  alg: string,
+  publicKeyB64: string,
+  sigB64: string,
+  message: Uint8Array,
+): Promise<boolean> {
+  if (alg !== "Ed25519") return false;
+  const pub = b64urlToBytes(publicKeyB64);
+  const sig = b64urlToBytes(sigB64);
+  if (pub.length !== 32 || sig.length !== 64) return false;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    pub as BufferSource,
+    { name: "Ed25519" },
+    false,
+    ["verify"],
+  );
+  return crypto.subtle.verify(
+    { name: "Ed25519" },
+    key,
+    sig as BufferSource,
+    message as BufferSource,
+  );
+}
+
 // The timeline chain, per SPEC.md section 5.
 export async function recomputeChain(t: TimelineDigest): Promise<string> {
   let prev = "";
@@ -148,11 +202,12 @@ export async function verifyBundle(b: Bundle, body?: string): Promise<VerifyResu
 
   let sigOk = false;
   try {
-    if (b.signature.alg !== "Ed25519") throw new Error("unsupported alg");
-    const pub = b64urlToBytes(b.signature.public_key);
-    const sig = b64urlToBytes(b.signature.value);
-    const key = await crypto.subtle.importKey("raw", pub as BufferSource, { name: "Ed25519" }, false, ["verify"]);
-    sigOk = await crypto.subtle.verify({ name: "Ed25519" }, key, sig as BufferSource, (await signingDigest(b)) as BufferSource);
+    sigOk = await ed25519Verify(
+      b.signature.alg,
+      b.signature.public_key,
+      b.signature.value,
+      await signingDigest(b),
+    );
   } catch {
     sigOk = false;
   }
@@ -162,6 +217,56 @@ export async function verifyBundle(b: Bundle, body?: string): Promise<VerifyResu
     detail: sigOk
       ? undefined
       : "the receipt was not signed by the key it names, or a signed field changed",
+  });
+
+  // The embedded C2PA credential must itself be signed, and must be
+  // consistent with the outer bundle. Without this, an attacker holding
+  // a genuine bundle could rewrite credential content fields (asset
+  // hash, timestamps, claim generator, assertions, even the credential
+  // public key) while leaving credential.signature.value untouched, and
+  // every outer check would still pass. SPEC.md section 8 step 5.
+  let credOk = false;
+  let credDetail = "the content credential's signature or bindings did not verify";
+  try {
+    const cred = b.credential;
+    const credSig = cred?.signature as Signature | undefined;
+    if (!credSig || typeof credSig !== "object") {
+      credDetail = "the content credential has no signature";
+    } else {
+      const sigVerified = await ed25519Verify(
+        credSig.alg,
+        credSig.public_key,
+        credSig.value,
+        await credentialDigest(cred),
+      );
+      // Consistency: the credential binds the same body and the same
+      // author key as the outer bundle. The credential's asset.sha256
+      // must equal post.sha256, and the credential's public key must be
+      // the outer bundle's public key (one author identity signs both).
+      // The outer PostRef carries no size or mime, so there is nothing
+      // to compare those credential fields against and we do not invent
+      // a value; if a future bundle gains those outer fields, add the
+      // comparisons here.
+      const asset = (cred as { asset?: Record<string, unknown> }).asset ?? {};
+      const bindings: boolean[] = [
+        sigVerified,
+        asset.sha256 === b.post.sha256,
+        credSig.public_key === b.signature.public_key,
+      ];
+      credOk = bindings.every((x) => x);
+      if (credOk) credDetail = "";
+      else if (sigVerified) {
+        credDetail =
+          "the content credential is signed but does not match the receipt it travels in";
+      }
+    }
+  } catch {
+    credOk = false;
+  }
+  checks.push({
+    name: "Content credential valid",
+    ok: credOk,
+    detail: credOk ? undefined : credDetail,
   });
 
   const chain = await recomputeChain(b.timeline);

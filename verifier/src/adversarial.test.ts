@@ -69,4 +69,88 @@ describe("adversarial: the verifier must REJECT tampering", () => {
     t.schema = "folio.receipts/99";
     expect(passed(await verifyBundle(t, body))).toBe(false);
   });
+
+  // The core fix: an attacker holding a genuine bundle rewrites content
+  // fields INSIDE the credential while leaving credential.signature.value
+  // untouched. The outer digest only binds signature.value, so before the
+  // inner-signature check these all showed green. They must now fail the
+  // "Content credential valid" check.
+  const credCheck = (r: Awaited<ReturnType<typeof verifyBundle>>) =>
+    r.checks.find((c) => c.name === "Content credential valid");
+
+  it("rejects a mutated credential asset.sha256 (value unchanged)", async () => {
+    const { bundle, body } = load();
+    const t = structuredClone(bundle);
+    (t.credential.asset as { sha256: string }).sha256 = "f".repeat(64);
+    const r = await verifyBundle(t, body);
+    expect(passed(r)).toBe(false);
+    expect(credCheck(r)?.ok).toBe(false);
+  });
+
+  it("rejects a mutated credential created_at (value unchanged)", async () => {
+    const { bundle, body } = load();
+    const t = structuredClone(bundle);
+    (t.credential as { created_at: string }).created_at = "1999-01-01T00:00:00Z";
+    const r = await verifyBundle(t, body);
+    expect(passed(r)).toBe(false);
+    expect(credCheck(r)?.ok).toBe(false);
+  });
+
+  it("rejects a mutated credential claim_generator (value unchanged)", async () => {
+    const { bundle, body } = load();
+    const t = structuredClone(bundle);
+    (t.credential as { claim_generator: string }).claim_generator = "Forged/9.9";
+    const r = await verifyBundle(t, body);
+    expect(passed(r)).toBe(false);
+    expect(credCheck(r)?.ok).toBe(false);
+  });
+
+  it("rejects a swapped credential public_key (value unchanged)", async () => {
+    const { bundle, body } = load();
+    const t = structuredClone(bundle);
+    // Flip one base64url character of the credential's own public key.
+    const pk = t.credential.signature.public_key;
+    t.credential.signature.public_key = pk[0] === "A" ? "B" + pk.slice(1) : "A" + pk.slice(1);
+    const r = await verifyBundle(t, body);
+    expect(passed(r)).toBe(false);
+    expect(credCheck(r)?.ok).toBe(false);
+  });
+
+  it("rejects a mutated credential assertion (value unchanged)", async () => {
+    const { bundle, body } = load();
+    const t = structuredClone(bundle);
+    const assertions = (t.credential as { assertions: unknown[] }).assertions;
+    assertions.push({ label: "attacker.injected", data: { anything: true } });
+    const r = await verifyBundle(t, body);
+    expect(passed(r)).toBe(false);
+    expect(credCheck(r)?.ok).toBe(false);
+  });
+
+  it("rejects a credential whose key differs from the bundle key", async () => {
+    // Even if the credential is self-consistently re-signed, its author
+    // key must equal the outer bundle key. Here we only detach it: the
+    // signature no longer matches AND the binding fails.
+    const { bundle, body } = load();
+    const t = structuredClone(bundle);
+    t.signature.public_key = "0".repeat(43); // outer key differs now
+    const r = await verifyBundle(t, body);
+    expect(passed(r)).toBe(false);
+    expect(credCheck(r)?.ok).toBe(false);
+  });
+
+  it("does not throw on a garbage credential signature", async () => {
+    const { bundle, body } = load();
+    const t = structuredClone(bundle);
+    t.credential.signature.value = "not-base64!!!";
+    const r = await verifyBundle(t, body); // must not throw
+    expect(passed(r)).toBe(false);
+    expect(credCheck(r)?.ok).toBe(false);
+  });
+
+  it("keeps the genuine sample fully valid including the credential", async () => {
+    const { bundle, body } = load();
+    const r = await verifyBundle(bundle, body);
+    expect(passed(r)).toBe(true);
+    expect(credCheck(r)?.ok).toBe(true);
+  });
 });

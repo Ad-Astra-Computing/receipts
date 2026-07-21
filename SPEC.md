@@ -171,6 +171,47 @@ signs the outer bundle signs the embedded credential, so a verifier
 that trusts the author's key trusts both at once, and a reader sees a
 single fingerprint.
 
+### 7.1 Signing the credential
+
+The credential carries its own `signature` object with the same shape
+as the outer bundle signature (`alg`, `public_key`, `value`). Unlike the
+outer bundle, the credential is a nested C2PA structure whose field set
+grows over time, so its signing input is a canonical serialization of
+the credential rather than a fixed field list.
+
+The signed payload is the credential with only `signature.value`
+removed. `signature.alg` and `signature.public_key` stay in the signed
+payload, so the declared algorithm and the author key cannot be swapped
+after signing. That payload is serialized with the JSON Canonicalization
+Scheme (RFC 8785, JCS): object members are sorted by UTF-16 code-unit
+order, array order is preserved, strings use standard JSON escaping with
+no Unicode normalization, and numbers are the safe integers the
+credential uses in plain JSON form. The reference verifier implements
+this subset in [`verifier/src/jcs.ts`](verifier/src/jcs.ts) with no
+external dependency, so the serializer is auditable.
+
+The credential digest is:
+
+```
+credDigest = SHA-256( UTF8("folio.c2pa.sig.v1") || UTF8( JCS(credential without signature.value) ) )
+```
+
+`folio.c2pa.sig.v1` is a domain separation tag distinct from the bundle
+tag `folio.receipts.sig.v1`, so a credential signature can never be
+replayed as a bundle signature or the reverse. The credential's
+`signature.value` is `Ed25519-Sign(private_key, credDigest)`, and the
+credential public key MUST equal the outer bundle public key.
+
+This covers every content field of the credential (asset hash, size,
+mime, `claim_generator`, `created_at`, every assertion, and the
+credential's own algorithm and public key). The outer bundle digest
+binds only `credential.signature.value` (section 6), so the credential's
+own signature is what makes those content fields tamper-evident: without
+verifying it, an attacker holding a genuine bundle could rewrite any
+credential content field while leaving `credential.signature.value`
+unchanged and still pass every outer check. A verifier MUST verify this
+inner signature.
+
 A future version will express the process assertions as C2PA custom
 assertions under a stable namespace, so that a plain
 C2PA reader sees a valid credential and a receipts-aware reader sees
@@ -187,8 +228,25 @@ A conforming verifier MUST, in order:
    64 bytes after base64url decoding.
 4. Recompute the signing digest (section 6) and reject a bundle whose
    `signature.value` does not verify against it.
-5. Verify the embedded C2PA credential.
+5. Verify the embedded C2PA credential. This has two parts, and any
+   failure rejects the bundle:
+   a. Recompute the credential digest (section 7.1) and verify
+      `credential.signature.value` against it with the credential's
+      public key. Reject a credential whose `signature.alg` is not
+      `Ed25519`, whose public key is not 32 bytes, or whose signature is
+      not 64 bytes after base64url decoding.
+   b. Check the credential's bindings to the outer bundle:
+      `credential.asset.sha256` MUST equal `post.sha256`, and
+      `credential.signature.public_key` MUST equal
+      `signature.public_key` (one author identity signs both). Where the
+      credential declares an asset `size` or `mime` and the outer bundle
+      carries the same field, they MUST agree; where the outer bundle has
+      no such field, the verifier makes no comparison and invents no
+      value.
 6. Recompute the timeline chain (section 5) and reject a mismatch.
+
+Step 5 MUST NOT be able to throw: malformed credential input rejects the
+bundle rather than aborting verification.
 
 When the verifier is also given the published body, it MUST additionally
 confirm that the SHA-256 of the body equals `post.sha256`.

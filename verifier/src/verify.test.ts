@@ -46,6 +46,14 @@ describe("verifyBundle against a Go-signed fixture", () => {
     }
   });
 
+  it("rejects a mutated credential content field with signature.value unchanged", async () => {
+    const b = structuredClone(fixture.bundle);
+    (b.credential.asset as { sha256: string }).sha256 = "d".repeat(64);
+    const res = await verifyBundle(b, fixture.body);
+    expect(res.ok).toBe(false);
+    expect(res.checks.find((c) => c.name === "Content credential valid")?.ok).toBe(false);
+  });
+
   it("recomputes the timeline chain to the stored value", async () => {
     const chain = await recomputeChain(fixture.bundle.timeline);
     expect(chain).toBe(fixture.bundle.timeline.chain_hash);

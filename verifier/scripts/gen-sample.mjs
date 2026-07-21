@@ -31,6 +31,32 @@ function b64url(bytes) {
   return Buffer.from(bytes).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+// RFC 8785 JCS for the credential subset, mirroring src/jcs.ts. Objects
+// sort keys by UTF-16 code-unit order, arrays keep their order, strings
+// use standard JSON escaping with no Unicode normalization, and numbers
+// are safe integers in JSON form. Kept in step with the verifier so the
+// generated credential is internally valid against verify.ts.
+function canonicalize(value) {
+  if (value === null) return "null";
+  const t = typeof value;
+  if (t === "string") return JSON.stringify(value);
+  if (t === "number") {
+    if (!Number.isFinite(value)) throw new Error("jcs: non-finite number");
+    return JSON.stringify(value);
+  }
+  if (t === "boolean") return value ? "true" : "false";
+  if (t === "undefined") throw new Error("jcs: undefined is not serializable");
+  if (Array.isArray(value)) return "[" + value.map(canonicalize).join(",") + "]";
+  const keys = Object.keys(value).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const parts = [];
+  for (const k of keys) {
+    const v = value[k];
+    if (v === undefined) throw new Error(`jcs: undefined value at key ${k}`);
+    parts.push(JSON.stringify(k) + ":" + canonicalize(v));
+  }
+  return "{" + parts.join(",") + "}";
+}
+
 // The published body stays fixed: its sha256, the C2PA credential and
 // the disclosed AI range all depend on it, and the verifier checks the
 // body hash. We only rewrite the timeline.
@@ -86,14 +112,18 @@ const rawPub = new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey)
 const pubB64 = b64url(rawPub);
 
 // Re-sign the credential with the new key so its signature.value is a
-// real signature over the credential (minus its own signature field).
-// The verifier binds this value into the bundle digest; keeping it a
-// genuine signature keeps the sample internally honest.
-const credForSig = { ...bundle.credential };
-delete credForSig.signature;
-const credDigest = await sha256(enc.encode("folio.c2pa.sig.v1" + JSON.stringify(credForSig)));
+// real signature over the credential (SPEC section 7). The signed
+// payload is the credential with ONLY signature.value removed, so
+// signature.alg and signature.public_key are covered. It is canonical-
+// ized with JCS and prefixed with the domain tag, exactly as verify.ts
+// recomputes it. The credential public key equals the bundle key: one
+// author identity signs both.
+bundle.credential.signature = { alg: "Ed25519", public_key: pubB64 };
+const credForSig = structuredClone(bundle.credential);
+delete credForSig.signature.value;
+const credDigest = await sha256(enc.encode("folio.c2pa.sig.v1" + canonicalize(credForSig)));
 const credSig = new Uint8Array(await crypto.subtle.sign({ name: "Ed25519" }, kp.privateKey, credDigest));
-bundle.credential.signature = { alg: "Ed25519", public_key: pubB64, value: b64url(credSig) };
+bundle.credential.signature.value = b64url(credSig);
 
 // Bundle signing digest, SPEC section 6.
 async function signingDigest(b) {

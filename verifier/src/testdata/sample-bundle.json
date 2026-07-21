@@ -75,8 +75,8 @@
       ],
       "signature": {
         "alg": "Ed25519",
-        "public_key": "1Zjimz60cpru_yiYhltKueyRQMBH1vOT7B27ePpnYvo",
-        "value": "9RxHNKNMgL4FKHCw27S0k8C6O3XN_T3hJSo2ECJs_3-q7UDnlCTx0qWE4KIzwmmBcPAa_fYzkgodGspIp-9lDw"
+        "public_key": "R-AgYexhxOwxZ0YOS6QyCwS9STw-k0x_IxGTtsIn9M8",
+        "value": "qPdxai0okJIUU_puUnot640VyvR7aiXqe7jZgmUjd3omXu50V3G8J3K7xcz8N2xtNCP8TUz40l8ppPqeKQCLDA"
       }
     },
     "ai_ranges": [
@@ -107,8 +107,8 @@
     },
     "signature": {
       "alg": "Ed25519",
-      "public_key": "1Zjimz60cpru_yiYhltKueyRQMBH1vOT7B27ePpnYvo",
-      "value": "9EZ299RjDLQM8adq9H_2HEGD4PF-zm7im6FJyFK_-HLEmhwGCuVgGKriR73Rc9EVCxZds6ACymkDNeAahtiIDA"
+      "public_key": "R-AgYexhxOwxZ0YOS6QyCwS9STw-k0x_IxGTtsIn9M8",
+      "value": "YrbNNVxdfHvBMEMjIY7iQa7iOqH0tBfzf2fKOB46y2vuEf_9D90hVOvvxa1JkhmnYAqnbOiRfMC6uscq8gctAw"
     }
   }
 }
