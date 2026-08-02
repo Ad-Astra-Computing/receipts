@@ -5,9 +5,11 @@ a desktop writing app. When text is cheap to generate, the scarce thing
 is a verifiable record of how a piece was made. This repository is that
 record's format and the code that checks it.
 
-It contains two things:
+It contains three things:
 
 - [`SPEC.md`](SPEC.md): the receipts bundle format and Ed25519 signing scheme.
+- A Go module (`receipts/`, `c2pa/`, `provenance/`, `history/`, `claims/`)
+  that builds, signs and verifies bundles. Standard library only.
 - [`verifier/`](verifier/): the client-side verifier that runs at
   [receiptsofthought.com](https://receiptsofthought.com).
 
@@ -39,12 +41,56 @@ browser with WebCrypto. Once the page has loaded, it consults no server.
 It checks:
 
 - the bundle's Ed25519 signature,
+- the embedded C2PA credential's own signature and its bindings to the
+  bundle around it,
 - the composition timeline's hash chain,
 - that the published text matches the hash recorded in the bundle.
 
-It does not independently re-verify the embedded C2PA credential's own
-signature. It binds the credential's signature value into the outer
-Ed25519 signature, so any change to the credential invalidates the bundle.
+## Use the Go module
+
+```sh
+go get github.com/Ad-Astra-Computing/receipts
+```
+
+The module is pure format and crypto: it reads no files, opens no
+network connections and never loads, stores or generates a key. A
+producer holds its own storage and its own Ed25519 key, assembles the
+wire types and signs.
+
+```go
+import (
+    "github.com/Ad-Astra-Computing/receipts/c2pa"
+    "github.com/Ad-Astra-Computing/receipts/receipts"
+)
+
+manifest, err := c2pa.Build(c2pa.BuildInput{Asset: asset, Generator: gen})
+cred, err := c2pa.Sign(manifest, key)
+
+bundle := receipts.Bundle{
+    Schema:     receipts.Schema,
+    Post:       receipts.PostRef{Title: title, URL: url, SHA256: bodyHash},
+    Credential: cred,
+    Timeline:   history.DigestTimeline(snapshots),
+}
+signed, err := receipts.Sign(bundle, key)
+
+err = receipts.VerifyBody(signed, body)
+```
+
+The packages:
+
+| Package | Holds |
+| --- | --- |
+| `receipts` | the bundle wire types, the signing digest, the timeline chain, `Sign`, `Verify`, `VerifyBody` |
+| `c2pa` | the content credential types, `Build`, `Sign`, `Verify`, and the RFC 8785 canonicalizer the credential signature uses |
+| `provenance` | the AI-disclosure event type, its hash chain and `VerifyChain` |
+| `history` | the composition snapshot and `DigestTimeline` |
+| `claims` | the sourced-claim wire types, validation and a canonical digest |
+
+`go test ./...` signs a bundle in Go and runs the TypeScript verifier's
+suite against it, so the two implementations cannot drift apart
+unnoticed. It needs the verifier's dependencies installed and skips
+itself when they are not.
 
 ## What a valid receipt proves
 
