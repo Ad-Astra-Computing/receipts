@@ -12,15 +12,19 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
-        # The verifier is a static Vite + TypeScript site. The dev shell
-        # gives you the Node toolchain to run its tests and build it.
+        # Two toolchains: Go for the trust-core module, Node for the
+        # Vite + TypeScript verifier. The module's interop test signs a
+        # bundle in Go and runs the verifier suite against it, so it
+        # needs both.
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
+            go
             nodejs_22
             git
           ];
           shellHook = ''
-            echo "receipts dev shell (node $(node --version))"
+            echo "receipts dev shell (go $(go version | cut -d\" \" -f3), node $(node --version))"
+            echo "  go test ./..."
             echo "  cd verifier && npm install && npm test"
           '';
         };
