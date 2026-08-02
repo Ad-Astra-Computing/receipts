@@ -1,0 +1,186 @@
+{
+  "body": "+++\ntitle = \"Keep the receipts\"\n+++\n\nWhen anyone can generate text, a clean draft proves nothing. What still counts is the work behind it: the sources checked, the lines cut, and the parts written with an AI assistant, disclosed and signed. This note is one of them, so you can see how it was made.\n",
+  "bundle": {
+    "schema": "folio.receipts/1",
+    "generated": "2026-07-20T14:50:51Z",
+    "post": {
+      "title": "Keep the receipts",
+      "url": "https://blog.example.com/post/keep-the-receipts/",
+      "sha256": "ae4c14ea42a7f5ed9aa8ac00b53afab37acb6c4d5cfde726f5fdc754666fe5ca"
+    },
+    "credential": {
+      "@context": "https://c2pa.org/ns/manifest/1.4",
+      "type": "ContentCredential",
+      "asset": {
+        "sha256": "ae4c14ea42a7f5ed9aa8ac00b53afab37acb6c4d5cfde726f5fdc754666fe5ca",
+        "size": 299,
+        "mime": "text/markdown",
+        "title": "Keep the receipts",
+        "url": "https://blog.example.com/post/keep-the-receipts/"
+      },
+      "claim_generator": "Folio/0.1.0",
+      "claim_generator_info": {
+        "name": "Folio",
+        "version": "0.1.0",
+        "url": "https://github.com/Ad-Astra-Computing/folio"
+      },
+      "created_at": "2026-07-20T14:50:51Z",
+      "assertions": [
+        {
+          "label": "c2pa.training-mining",
+          "data": {
+            "entries": {
+              "c2pa.ai_generative_training": {
+                "use": "notAllowed"
+              },
+              "c2pa.ai_inference": {
+                "use": "notAllowed"
+              },
+              "c2pa.ai_training": {
+                "use": "notAllowed"
+              },
+              "c2pa.data_mining": {
+                "use": "notAllowed"
+              }
+            }
+          }
+        },
+        {
+          "label": "folio.ai_ranges",
+          "data": {
+            "chain_len": 1,
+            "ranges": [
+              {
+                "from": 189,
+                "to": 207,
+                "model": "claude-opus-4-8",
+                "event_id": "686ede7eb7b1",
+                "hash": "cd21a53c6eb5ce0232d31211f9a333c4e39a650c22c69841b42572748026a69f",
+                "when": "2026-07-20T14:50:51Z"
+              }
+            ]
+          }
+        },
+        {
+          "label": "c2pa.actions",
+          "data": {
+            "actions": [
+              {
+                "action": "c2pa.created",
+                "when": "2026-07-20T14:50:51Z"
+              }
+            ]
+          }
+        }
+      ],
+      "signature": {
+        "alg": "Ed25519",
+        "public_key": "dASYv092ApU5GwNRA8fl9KBm6skT8qCBH8ZO0fHTsaw",
+        "value": "rsGGZDaHRcjV2BpFW5b_5T6KdK8Y2ZHgybkGfTQMQT-pw9b4odksRzpw9WmDPJabcmgg1fi7CwjsXS5T9nVEAQ"
+      }
+    },
+    "ai_ranges": [
+      {
+        "from": 189,
+        "to": 207,
+        "model": "claude-opus-4-8",
+        "when": "2026-07-20T14:50:51Z"
+      }
+    ],
+    "claims": [],
+    "timeline": {
+      "checkpoints": [
+        {
+          "at": "2026-07-18T09:12:00Z",
+          "words": 6,
+          "chars": 34,
+          "hash": "556befc65236be7eef3bbc838abea11d8d45840206de6a4241029a6e31cc662c"
+        },
+        {
+          "at": "2026-07-18T09:15:00Z",
+          "words": 21,
+          "chars": 118,
+          "hash": "5aa3660050c2518d4b9ebb2d6fac7291d3cada2d0edba5426e1b688456b2e4c2"
+        },
+        {
+          "at": "2026-07-18T09:19:00Z",
+          "words": 38,
+          "chars": 213,
+          "hash": "2c8851314e754129ef99aedb01bce48b3fb8d2d336f77494eb724c8aca932dc2"
+        },
+        {
+          "at": "2026-07-18T09:24:00Z",
+          "words": 44,
+          "chars": 247,
+          "hash": "f697b4279df5152759e466fe37fc24f8b51be3903d9f62221967c5a76263c3ce"
+        },
+        {
+          "at": "2026-07-18T09:26:00Z",
+          "words": 44,
+          "chars": 247,
+          "hash": "7f5ecd8657f933e79ef5321cde383607937432f11e58ab7a2cef0a2e3263a718"
+        },
+        {
+          "at": "2026-07-18T09:31:00Z",
+          "words": 63,
+          "chars": 351,
+          "hash": "2c27f99dd2f846f5a5035839a489b201bc72c244d99d351beabbe8c7edd94027"
+        },
+        {
+          "at": "2026-07-18T09:38:00Z",
+          "words": 81,
+          "chars": 452,
+          "hash": "0176068718f3b64d429cafad67d04c9aa07dbb076899dd23197e42404d330f4e"
+        },
+        {
+          "at": "2026-07-18T09:46:00Z",
+          "words": 79,
+          "chars": 441,
+          "hash": "1beeb2f62f9305c0ba7f110a61c170481e3bc51f1d8d39ac0318e1880744ec38"
+        },
+        {
+          "at": "2026-07-18T10:03:00Z",
+          "words": 58,
+          "chars": 324,
+          "hash": "68e4f9647bea17c969a4889730a34ed72646b573e1d2f8af4af42e50ebb6bf8d"
+        },
+        {
+          "at": "2026-07-18T10:15:00Z",
+          "words": 66,
+          "chars": 369,
+          "hash": "5a137c402ae261e780867ba07e99819227e934a615781a3ccbaeeed6aa198429"
+        },
+        {
+          "at": "2026-07-18T10:30:00Z",
+          "words": 71,
+          "chars": 398,
+          "hash": "aac47a249368f0c7de17a5513888f7f6fb80362e2a8f35f39512442d4886f679"
+        },
+        {
+          "at": "2026-07-18T10:44:00Z",
+          "words": 54,
+          "chars": 302,
+          "hash": "8e41423dd0f3deebb2545a4a7e711f6c9e89f87a918adaefbb4216024e4b720c"
+        },
+        {
+          "at": "2026-07-18T10:57:00Z",
+          "words": 51,
+          "chars": 286,
+          "hash": "9535967b6b2060bc00840a81ff2ee3477d3c335d2fc064e7c36a7b2d4ff848b2"
+        },
+        {
+          "at": "2026-07-18T11:10:00Z",
+          "words": 49,
+          "chars": 261,
+          "hash": "6b5149cd74e1c1d8e29d7d520200929790a74c116aae5a2b3d407b16905edfed"
+        }
+      ],
+      "chain_hash": "5cd06471e99091e35db3e0c4a3b768ce87974239a2b539dd6251f1e0ed4de483"
+    },
+    "signature": {
+      "alg": "Ed25519",
+      "public_key": "dASYv092ApU5GwNRA8fl9KBm6skT8qCBH8ZO0fHTsaw",
+      "value": "ZDbMxN4p4mWYxaH7Z2763adtbidI_FvRWZbYPzQs4F2ROWSSFNXSLXPvFl1BF5-KBMs2pq88VHYe8dRA0918Bw"
+    }
+  }
+}

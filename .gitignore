@@ -20,3 +20,7 @@ coverage.*
 .direnv/
 result
 result-*
+
+# Go workspace (local development only)
+go.work
+go.work.sum
