@@ -2,7 +2,7 @@
   "body": "+++\ntitle = \"Keep the receipts\"\n+++\n\nWhen anyone can generate text, a clean draft proves nothing. What still counts is the work behind it: the sources checked, the lines cut, and the parts written with an AI assistant, disclosed and signed. This note is one of them, so you can see how it was made.\n",
   "bundle": {
     "schema": "folio.receipts/1",
-    "generated": "2026-07-20T14:50:51Z",
+    "generated": "2026-08-02T23:24:02Z",
     "post": {
       "title": "Keep the receipts",
       "url": "https://blog.example.com/post/keep-the-receipts/",
@@ -24,7 +24,7 @@
         "version": "0.1.0",
         "url": "https://github.com/Ad-Astra-Computing/folio"
       },
-      "created_at": "2026-07-20T14:50:51Z",
+      "created_at": "2026-08-02T23:24:02Z",
       "assertions": [
         {
           "label": "c2pa.training-mining",
@@ -54,9 +54,9 @@
                 "from": 189,
                 "to": 207,
                 "model": "claude-opus-4-8",
-                "event_id": "686ede7eb7b1",
-                "hash": "cd21a53c6eb5ce0232d31211f9a333c4e39a650c22c69841b42572748026a69f",
-                "when": "2026-07-20T14:50:51Z"
+                "event_id": "bfc98c62431b",
+                "hash": "19df7a88aa82e8429cd9dcc24670810ec7c1a51bc8d792c6c257f667d0ba538b",
+                "when": "2026-08-02T22:54:02Z"
               }
             ]
           }
@@ -67,7 +67,7 @@
             "actions": [
               {
                 "action": "c2pa.created",
-                "when": "2026-07-20T14:50:51Z"
+                "when": "2026-08-02T23:24:02Z"
               }
             ]
           }
@@ -75,8 +75,8 @@
       ],
       "signature": {
         "alg": "Ed25519",
-        "public_key": "R-AgYexhxOwxZ0YOS6QyCwS9STw-k0x_IxGTtsIn9M8",
-        "value": "qPdxai0okJIUU_puUnot640VyvR7aiXqe7jZgmUjd3omXu50V3G8J3K7xcz8N2xtNCP8TUz40l8ppPqeKQCLDA"
+        "public_key": "LgwX6jnPKM4UdOb2_5nFRrZ5IWOYCMquajpctMB6Eec",
+        "value": "7dN-Re82tZ4aOFuHmRo0SKX_jbQb_xdCL5di3jOdP1kKIAPxNMZ3haSyichNOGzWpr_TwJlL_w8HkzTotk6-Ag"
       }
     },
     "ai_ranges": [
@@ -84,31 +84,43 @@
         "from": 189,
         "to": 207,
         "model": "claude-opus-4-8",
-        "when": "2026-07-20T14:50:51Z"
+        "when": "2026-08-02T22:54:02Z"
       }
     ],
-    "claims": [],
+    "claims": [
+      {
+        "excerpt": "the sources checked, the lines cut",
+        "source_url": "https://example.com/how-this-was-made",
+        "status": "ok"
+      }
+    ],
     "timeline": {
       "checkpoints": [
         {
-          "at": "2026-07-20T14:50:51Z",
+          "at": "2026-08-02T21:54:02Z",
           "words": 10,
           "chars": 60,
           "hash": "521569dc454166b030d15dc1e5366dd6d8a5df17c5d4023a026080ccf980bd09"
         },
         {
-          "at": "2026-07-20T14:50:51Z",
+          "at": "2026-08-02T22:14:02Z",
+          "words": 24,
+          "chars": 137,
+          "hash": "d2e2213c06556fd1f1780963046311cf04eb2ef5ecd57bd0f0ea58cb25f82306"
+        },
+        {
+          "at": "2026-08-02T22:34:02Z",
           "words": 49,
           "chars": 261,
           "hash": "d67994db2d0f4ce8d6d0f12b2e219a426112acdba32fdc51e725623437c82adb"
         }
       ],
-      "chain_hash": "0a889cec48445cc43f9f739a962031221548d64aa6a0941b88cd360ea9498330"
+      "chain_hash": "0fae6041d5bb8e87912e5fe81ba5256a81bcab8b5809bf100c6225801ac042e1"
     },
     "signature": {
       "alg": "Ed25519",
-      "public_key": "R-AgYexhxOwxZ0YOS6QyCwS9STw-k0x_IxGTtsIn9M8",
-      "value": "YrbNNVxdfHvBMEMjIY7iQa7iOqH0tBfzf2fKOB46y2vuEf_9D90hVOvvxa1JkhmnYAqnbOiRfMC6uscq8gctAw"
+      "public_key": "LgwX6jnPKM4UdOb2_5nFRrZ5IWOYCMquajpctMB6Eec",
+      "value": "PQjMc7kIEjxUoeabKzTIz1v5oeC0DRy_ZMnoou0DfkHaBXRvQVGQFkAuaCx6nizCTf6VBuDhkncYlxQPmfJ5AQ"
     }
   }
 }

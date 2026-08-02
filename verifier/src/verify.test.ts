@@ -8,9 +8,17 @@ import { verifyBundle, recomputeChain, type Bundle } from "./verify";
 // signed by a conforming producer. If the verifier's signing digest or
 // timeline chain diverge from the format in SPEC.md, verification of
 // this genuine bundle fails here.
-const fixture = JSON.parse(
-  readFileSync(fileURLToPath(new URL("./testdata/sample-bundle.json", import.meta.url)), "utf8"),
-) as { bundle: Bundle; body: string };
+// RECEIPTS_FIXTURE points the suite at a bundle generated elsewhere,
+// which is how the Go module's interop test runs these checks against a
+// freshly Go-signed bundle. Unset, the committed fixture is used.
+const fixturePath =
+  process.env.RECEIPTS_FIXTURE ??
+  fileURLToPath(new URL("./testdata/sample-bundle.json", import.meta.url));
+
+const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as {
+  bundle: Bundle;
+  body: string;
+};
 
 describe("verifyBundle against a Go-signed fixture", () => {
   it("verifies a genuine bundle with the correct body", async () => {
