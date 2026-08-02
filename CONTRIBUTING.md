@@ -14,9 +14,14 @@ receipt verifies, so the bar is high and deliberate.
 
 ## Ground rules
 
-- The verifier must implement the signing digest and the timeline chain
-  exactly as `SPEC.md` defines them. The test suite verifies a genuine
-  signed fixture, so a change that breaks the format fails a test.
+- Both implementations, the Go module and the TypeScript verifier, must
+  follow `SPEC.md` exactly on the signing digest, the timeline chain and
+  the credential canonicalization. The Go suite signs a bundle and runs
+  the verifier's tests against it, so a change that breaks the format
+  fails a test in both languages.
+- The Go module depends on the standard library only, reads no files and
+  opens no network connections. Storage, keys and configuration belong
+  to whatever program uses it.
 - Do not add a network call to the verification path. The verifier
   checks a bundle with the bundle alone. That property is the point.
 - The specification in `SPEC.md` is normative prose. If you change
@@ -27,7 +32,8 @@ receipt verifies, so the bar is high and deliberate.
 ## Style
 
 - No em-dashes, no Oxford commas in prose. Plain, direct English.
-- TypeScript passes `npm run check`.
+- TypeScript passes `npm run check`. Go passes `gofmt -l .` with no
+  output and `go vet ./...` clean.
 - Commits: imperative subject under 50 characters, no trailing period.
   One logical change per commit.
 
