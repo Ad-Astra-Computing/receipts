@@ -251,7 +251,10 @@ export function renderReceipt(inner: HTMLElement, bundle: Bundle, body: string |
         const a = el("a", "r-claim-src") as HTMLAnchorElement;
         a.href = href;
         a.textContent = new URL(href).hostname;
-        a.rel = "noopener";
+        // noopener already denies the opened page window.opener; noreferrer
+        // also withholds the Referer, so following a claim's source does not
+        // tell that site the reader was verifying a receipt.
+        a.rel = "noopener noreferrer";
         a.target = "_blank";
         // The receipt card is a <label> for the file input; keep a link
         // click from also opening the file picker.
