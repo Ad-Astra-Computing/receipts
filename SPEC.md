@@ -15,8 +15,8 @@ signs them as a unit:
 
 1. A reference to the published body: its title, its canonical URL and
    the SHA-256 of its bytes.
-2. A C2PA content credential, itself signed, binding the same author
-   identity to the same body.
+2. A C2PA-aligned content credential, itself signed, binding the same
+   author identity to the same body.
 3. The AI-authored spans the author chose to disclose, as character
    ranges with an optional model name and timestamp.
 4. The factual claims the author sourced, as an excerpt, a source URL
@@ -57,7 +57,7 @@ lower-snake-case in the wire format.
     "url": "optional canonical URL",
     "sha256": "hex of the published body bytes"
   },
-  "credential": { "...": "a signed C2PA manifest, see section 7" },
+  "credential": { "...": "a signed, C2PA-aligned manifest, see section 7" },
   "ai_ranges": [
     { "from": 120, "to": 240, "model": "optional", "when": "optional RFC3339" }
   ],
@@ -80,8 +80,12 @@ lower-snake-case in the wire format.
 
 `ai_ranges` and `claims` MAY be empty arrays. A verifier MUST treat a
 missing or `null` array as empty. Timestamps are RFC 3339 in UTC,
-truncated to whole seconds, so that their string form is reproducible
-byte for byte on any platform.
+truncated to whole seconds and rendered with the `Z` designator, so that
+their string form is reproducible byte for byte on any platform. A
+producer MUST NOT emit sub-second precision or a numeric zone offset.
+The signing digest hashes the rendered timestamp (section 6), so a
+bundle whose wire timestamp differs from the string that was signed
+verifies in one implementation and fails in another.
 
 ## 4. Encodings
 
@@ -158,13 +162,37 @@ fields.
 
 ## 7. Relationship to C2PA
 
-The `credential` field is a signed C2PA content credential. C2PA
-(the Coalition for Content Provenance and Authenticity, ISO 22144) is
-the industry standard for binding provenance assertions to media. The
-receipts bundle does not replace it. It carries a C2PA credential
-inside a wrapper that adds the composition-process assertions C2PA does
-not model: the disclosed AI ranges, the sourced claims and the
-tamper-evident timeline digest.
+The `credential` field is a signed, C2PA-aligned content credential: it
+follows C2PA's data model, and departs from C2PA's serialization and
+trust model in the ways this section sets out. C2PA (the Coalition for
+Content Provenance and Authenticity) is the industry standard for
+binding provenance assertions to media, and is being standardized as
+ISO/DIS 22144, a draft international standard. The receipts bundle does
+not replace it. It carries the credential inside a wrapper that adds the
+composition-process assertions C2PA does not model: the disclosed AI
+ranges, the sourced claims and the tamper-evident timeline digest.
+
+An implementation MUST NOT present this credential as a full C2PA
+manifest, and MUST NOT claim conformance to the C2PA specification on
+the strength of verifying one. The differences are:
+
+- The assertion store is JSON. The full standard encodes it as CBOR.
+- The signature is raw Ed25519 over RFC 8785 canonical JSON
+  (section 7.1). The full standard signs with COSE_Sign1.
+- Trust is anchored in the author's own public key, presented to the
+  reader as a fingerprint. The full standard anchors trust in an X.509
+  certificate chain validated against a C2PA trust list.
+- Assertions labelled `c2pa.*` mirror the standard's labels where the
+  data is meaningful. Assertions labelled `folio.*` are extensions
+  defined by this specification, and no C2PA reader is required to
+  understand them.
+
+A general C2PA implementation therefore does not read this credential,
+and a verifier conforming to this specification does not read a
+COSE-signed C2PA manifest. The reason for the divergence is that
+personal publishers have no certificate authority, while a self-anchored
+public key fingerprint is verifiable by any reader with nothing but a
+SHA-256 and an Ed25519 primitive.
 
 The two signatures share one author identity. The same Ed25519 key that
 signs the outer bundle signs the embedded credential, so a verifier
@@ -203,7 +231,7 @@ replayed as a bundle signature or the reverse. The credential's
 credential public key MUST equal the outer bundle public key.
 
 This covers every content field of the credential (asset hash, size,
-mime, `claim_generator`, `created_at`, every assertion, and the
+mime, `claim_generator`, `created_at`, every assertion and the
 credential's own algorithm and public key). The outer bundle digest
 binds only `credential.signature.value` (section 6), so the credential's
 own signature is what makes those content fields tamper-evident: without
@@ -211,12 +239,6 @@ verifying it, an attacker holding a genuine bundle could rewrite any
 credential content field while leaving `credential.signature.value`
 unchanged and still pass every outer check. A verifier MUST verify this
 inner signature.
-
-A future version will express the process assertions as C2PA custom
-assertions under a stable namespace, so that a plain
-C2PA reader sees a valid credential and a receipts-aware reader sees
-the full record. Until that lands, the wrapper in this specification is
-the interoperable form.
 
 ## 8. Verification obligations
 
@@ -228,7 +250,7 @@ A conforming verifier MUST, in order:
    64 bytes after base64url decoding.
 4. Recompute the signing digest (section 6) and reject a bundle whose
    `signature.value` does not verify against it.
-5. Verify the embedded C2PA credential. This has two parts, and any
+5. Verify the embedded content credential. This has two parts, and any
    failure rejects the bundle:
    a. Recompute the credential digest (section 7.1) and verify
       `credential.signature.value` against it with the credential's

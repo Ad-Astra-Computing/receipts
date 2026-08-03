@@ -21,7 +21,7 @@ still agree.
 ## What is in a receipt
 
 - A reference to the published text: title, URL and SHA-256 hash.
-- A signed C2PA content credential.
+- A signed, C2PA-aligned content credential.
 - The AI-authored character ranges the author chose to disclose.
 - Sourced claims, each an excerpt and a source URL.
 - A privacy-preserving digest of the composition timeline: per-checkpoint
@@ -32,6 +32,9 @@ All of it is signed as one unit with a single Ed25519 key. The format
 version is `folio.receipts/1`. Breaking changes carry a new schema
 string, and verifiers reject schemas they do not recognise.
 
+The wire format is versioned by that schema constant. The Go module is
+at v0.x and makes no API stability promise.
+
 ## Verify a receipt
 
 Open [receiptsofthought.com](https://receiptsofthought.com) and drop a
@@ -41,7 +44,7 @@ browser with WebCrypto. Once the page has loaded, it consults no server.
 It checks:
 
 - the bundle's Ed25519 signature,
-- the embedded C2PA credential's own signature and its bindings to the
+- the embedded content credential's own signature and its bindings to the
   bundle around it,
 - the composition timeline's hash chain,
 - that the published text matches the hash recorded in the bundle.
@@ -59,7 +62,10 @@ wire types and signs.
 
 ```go
 import (
+    "time"
+
     "github.com/Ad-Astra-Computing/receipts/c2pa"
+    "github.com/Ad-Astra-Computing/receipts/history"
     "github.com/Ad-Astra-Computing/receipts/receipts"
 )
 
@@ -68,9 +74,13 @@ cred, err := c2pa.Sign(manifest, key)
 
 bundle := receipts.Bundle{
     Schema:     receipts.Schema,
+    Generated:  time.Now(), // Sign truncates this to whole UTC seconds
     Post:       receipts.PostRef{Title: title, URL: url, SHA256: bodyHash},
     Credential: cred,
-    Timeline:   history.DigestTimeline(snapshots),
+    // history.DigestTimeline takes composition snapshots and returns the
+    // digest. receipts.DigestTimeline takes checkpoints that are already
+    // digested, and only chains them.
+    Timeline: history.DigestTimeline(snapshots),
 }
 signed, err := receipts.Sign(bundle, key)
 
@@ -82,7 +92,7 @@ The packages:
 | Package | Holds |
 | --- | --- |
 | `receipts` | the bundle wire types, the signing digest, the timeline chain, `Sign`, `Verify`, `VerifyBody` |
-| `c2pa` | the content credential types, `Build`, `Sign`, `Verify`, and the RFC 8785 canonicalizer the credential signature uses |
+| `c2pa` | the content credential types, `Build`, `Sign`, `Verify` and the RFC 8785 canonicalizer the credential signature uses |
 | `provenance` | the AI-disclosure event type, its hash chain and `VerifyChain` |
 | `history` | the composition snapshot and `DigestTimeline` |
 | `claims` | the sourced-claim wire types, validation and a canonical digest |
@@ -125,10 +135,15 @@ npm run build     # static output in dist/
 
 ## Relationship to C2PA
 
-A receipts bundle carries a C2PA content credential and adds the
-composition-process assertions C2PA does not model. It extends an open
-industry standard rather than competing with it. See section 7 of the
-specification.
+A receipts bundle carries a C2PA-aligned content credential and adds the
+composition-process assertions C2PA does not model. It follows C2PA's
+data model and departs from its serialization and trust model: the
+assertion store is JSON rather than CBOR; the signature is raw Ed25519
+over RFC 8785 canonical JSON rather than COSE_Sign1; and trust is
+anchored in the author's own public key rather than an X.509 chain
+against a C2PA trust list. It is not a full C2PA manifest and a general
+C2PA implementation does not read it. Section 7 of the specification
+sets out every difference.
 
 ## License
 
