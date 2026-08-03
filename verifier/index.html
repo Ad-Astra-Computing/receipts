@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#0b0b0d" />
     <meta
       name="description"
-      content="Writing, with receipts. A signed, tamper-evident record of how a piece of writing was made, checked in your browser. Once loaded, the verifier consults no server."
+      content="When text is cheap to generate, the scarce resource is a verifiable record of how it was created. Folio keeps that record as you write; this page checks it in your browser, no server involved."
     />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
@@ -19,6 +19,7 @@
       <span class="wordmark">Receipts of thought<span class="dot">.</span></span>
       <nav aria-label="Primary">
         <a href="#thesis">Why</a>
+        <a href="#proves">Honesty</a>
         <a href="#how">How</a>
         <a href="#folio">Folio</a>
       </nav>
@@ -28,13 +29,18 @@
       <section id="hero" aria-labelledby="hero-h">
         <div class="statement">
           <h1 id="hero-h">Writing, with receipts<span class="dot">.</span></h1>
-          <p class="dek">
-            Anyone can generate text. Folio keeps a signed, tamper-evident
-            record of your writing's process, and this page checks it in
-            your browser. Once the page loads, verification consults no
-            server.
+          <p class="dek tagline">
+            When text is cheap to generate, the scarce resource is a
+            verifiable record of how it was created.
           </p>
-          <p class="meta">verified in your browser · Ed25519 · SHA-256 · no network after load</p>
+          <p class="hero-copy">
+            Folio is a desktop writing app that keeps that record as you
+            write: a timeline of the composition, the sources behind each
+            claim, the passages an AI wrote that the author chose to
+            disclose. Publishing produces a portable receipt. This page
+            checks one, in your browser, with no server involved.
+          </p>
+          <p class="meta">checked in your browser · no server · nothing you drop leaves your machine</p>
         </div>
 
         <label class="receipt dropzone" for="file" id="receipt-card">
@@ -57,12 +63,72 @@
         </p>
       </section>
 
-      <section id="anatomy" class="band" aria-labelledby="anatomy-h">
+      <section id="thesis" aria-labelledby="thesis-h">
+        <h2 id="thesis-h">When text is free, the record is the value</h2>
+        <p>
+          A clean final draft used to be evidence that someone thought. It
+          is not anymore, because a clean final draft is free. What stays
+          scarce is the record of the work itself: the drafts, the sources
+          checked, the argument that changed along the way.
+        </p>
+        <p>
+          Folio keeps that record as you write, then signs it. Not to prove
+          what you did not do, an unwinnable game, but to keep the receipts
+          for how the piece was made. Receipts of thought, not proof of
+          innocence. The record is the asset.
+        </p>
+        <p>
+          It is for anyone whose work is doubted by default. Writers whose
+          voice gets mistaken for a model's. Students and teams asked to
+          show their work. Publishers who want a stated basis for trust
+          before they put their name on a piece. The receipt is the
+          author's to publish, and anyone can verify it here.
+        </p>
+      </section>
+
+      <section id="proves" class="band" aria-labelledby="proves-h">
+        <h2 id="proves-h">What a valid receipt proves and does not prove</h2>
+        <dl class="anatomy">
+          <div>
+            <dt>it proves</dt>
+            <dd>
+              <ul>
+                <li>Nothing in the receipt was altered after signing: title, text, timeline, disclosed AI passages, sourced claims.</li>
+                <li>The composition checkpoints were recorded in order, and none was edited or removed later.</li>
+                <li>The text shown is the text that was signed.</li>
+                <li>The embedded C2PA-aligned content credential carries its own valid signature and names the same text and the same key as the receipt around it. This page verifies that credential's signature and bindings itself.</li>
+              </ul>
+            </dd>
+          </div>
+          <div>
+            <dt>it does not prove</dt>
+            <dd>
+              <ul>
+                <li>Who holds the signing key. A key belongs to a machine and its owner, not to a verified identity.</li>
+                <li>That the timeline reflects honest work. A determined author could compose elsewhere and record a tidy history before signing.</li>
+                <li>That undisclosed text is human-written. Disclosure is the author's choice; the receipt binds what was disclosed, not what was not.</li>
+              </ul>
+            </dd>
+          </div>
+        </dl>
+        <p>
+          A receipt is a signed account of how a piece was made, offered by
+          its author. It makes tampering after the fact evident. That is
+          the whole claim.
+        </p>
+        <p>
+          Once this page has loaded, verification consults no server: it runs
+          entirely in your browser. You still trust your browser, and whoever
+          served this page, to deliver that code faithfully. Read the source.
+        </p>
+      </section>
+
+      <section id="anatomy" aria-labelledby="anatomy-h">
         <h2 id="anatomy-h">How to read a receipt</h2>
         <dl class="anatomy">
           <div>
             <dt>Signature</dt>
-            <dd>One Ed25519 signature covers the receipt's fields: the schema and timestamp; the post title, URL and hash; the ranges labeled AI-written; the sourced claims; the timeline chain; and the embedded credential's signature value. This page then verifies that credential in full: its own signature over its own canonical form, and that it binds the same body and the same key as the receipt around it. Changing any of it without re-signing makes verification fail.</dd>
+            <dd>One Ed25519 signature covers the receipt's fields: the schema and timestamp; the post title, URL and hash; the ranges labeled AI-written; the sourced claims; the timeline chain; and the embedded C2PA-aligned content credential's signature value. This page then verifies that credential in full: its own signature over its own canonical form, and that it binds the same body and the same key as the receipt around it. Changing any of it without re-signing makes verification fail.</dd>
           </div>
           <div>
             <dt>Timeline</dt>
@@ -79,29 +145,9 @@
         </dl>
       </section>
 
-      <section id="thesis" aria-labelledby="thesis-h">
-        <h2 id="thesis-h">When text is free, the record is the value</h2>
-        <p>
-          A clean final draft used to be evidence that someone thought. It
-          is not anymore, because a clean final draft is free. What stays
-          scarce is the record of the work itself: the drafts, the sources
-          checked, the argument that changed along the way.
-        </p>
-        <p>
-          Folio keeps that record as you write, then signs it. Not to prove
-          what you did not do, an unwinnable game, but to keep the receipts
-          for how the piece was made. The receipt is yours to publish, and
-          anyone can check it here.
-        </p>
-        <p>
-          Once this page has loaded, verification consults no server: it runs
-          entirely in your browser. You still trust your browser, and whoever
-          served this page, to deliver that code faithfully. Read the source.
-        </p>
-      </section>
-
       <section id="how" class="band" aria-labelledby="how-h">
-        <h2 id="how-h">What each check proves</h2>
+        <h2 id="how-h">What each check verifies</h2>
+        <p>For readers who want the mechanism. Each row is one check from the card above.</p>
         <table class="ledger">
           <thead>
             <tr><th scope="col">Check</th><th scope="col">What it proves</th><th scope="col">Primitive</th></tr>
@@ -109,7 +155,7 @@
           <tbody>
             <tr><td>Signature</td><td>None of the receipt's signed fields were altered</td><td>Ed25519</td></tr>
             <tr><td>AI disclosure</td><td>Ranges labeled AI-written are signature-bound</td><td>Ed25519</td></tr>
-            <tr><td>Content credential</td><td>The embedded credential is signed by the same key and names the same text</td><td>Ed25519 over RFC 8785</td></tr>
+            <tr><td>Content credential</td><td>The embedded C2PA-aligned credential is signed by the same key and names the same text</td><td>Ed25519 over RFC 8785</td></tr>
             <tr><td>Timeline</td><td>The composition checkpoints were not reordered or edited</td><td>SHA-256 chain</td></tr>
             <tr><td>Text match</td><td>The bundled text matches its hash</td><td>SHA-256</td></tr>
           </tbody>

@@ -123,6 +123,16 @@ main { max-width: 1080px; margin: 0 auto; padding: 0 var(--s3); }
 .statement { max-width: var(--measure); }
 #hero-h { font-size: var(--fs-2); margin: 0 0 var(--s2); line-height: 1.1; }
 .dek { color: var(--bone-1); max-width: 40ch; margin: 0 0 var(--s2); }
+/* The tagline is the argument, set in the display serif so it reads as
+   a statement, not UI chrome. */
+.dek.tagline {
+  font-family: var(--font-serif);
+  font-size: var(--fs-1);
+  line-height: 1.35;
+  color: var(--bone-0);
+  max-width: 26ch;
+}
+.hero-copy { color: var(--bone-1); max-width: 44ch; margin: 0 0 var(--s2); font-size: var(--fs--1); }
 .meta { font-family: var(--font-mono); font-size: var(--fs--1); color: var(--bone-2); margin: 0; }
 
 /* Receipt card: the hero AND the dropzone */
@@ -247,6 +257,16 @@ section p { max-width: var(--measure); color: var(--bone-1); margin: 0 0 var(--s
 .anatomy { display: grid; gap: var(--s2); margin: 0; }
 .anatomy dt { font-family: var(--font-mono); font-size: var(--fs--1); color: var(--bone-1); text-transform: lowercase; }
 .anatomy dd { margin: 4px 0 0; color: var(--bone-1); max-width: 52ch; }
+/* Lists inside anatomy dds (the proves / does-not-prove columns). */
+.anatomy dd ul {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: var(--s0);
+}
+.anatomy dd ul li { padding-left: var(--s2); position: relative; }
+.anatomy dd ul li::before {
+  content: "·"; position: absolute; left: 4px;
+  color: var(--bone-2); font-weight: 700;
+}
 
 .ledger { border-collapse: collapse; width: 100%; max-width: var(--measure); font-size: var(--fs--1); }
 .ledger th, .ledger td { text-align: left; padding: var(--s0) var(--s1); border-bottom: 1px solid var(--hairline); }
