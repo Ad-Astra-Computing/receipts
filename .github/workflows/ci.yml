@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: Apache-2.0
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: Go module
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26'
+          cache-dependency-path: go.mod
+
+      # The cross-language interop test (interop_test.go) shells out to
+      # the verifier's vitest suite and skips itself when npm is missing
+      # or verifier/node_modules/vitest is absent. Node and the verifier's
+      # dependencies therefore have to be in place before `go test` runs,
+      # or the gate silently passes without checking anything.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: verifier/package-lock.json
+
+      - name: Install verifier dependencies (for the interop gate)
+        working-directory: verifier
+        run: npm ci
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "these files are not gofmt-clean:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
+
+      - name: Confirm the interop gate ran
+        run: go test -v -run TestGoSignedBundleVerifiesInTypeScript . | grep -q '^--- PASS'
+
+  verifier:
+    name: Verifier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: verifier/package-lock.json
+
+      - name: npm ci
+        working-directory: verifier
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: verifier
+        run: npm run check
+
+      - name: Test
+        working-directory: verifier
+        run: npm test
+
+      - name: Build
+        working-directory: verifier
+        run: npm run build
