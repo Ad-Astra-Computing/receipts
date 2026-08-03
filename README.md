@@ -1,8 +1,8 @@
 # Receipts of Thought
 
 The open trust core behind [Folio](https://github.com/Ad-Astra-Computing/folio),
-a desktop writing app. When text is cheap to generate, the scarce thing
-is a verifiable record of how a piece was made. This repository is that
+a desktop writing app. When text is cheap to generate, the scarce resource
+is a verifiable record of how it was created. This repository is that
 record's format and the code that checks it.
 
 It contains three things:
