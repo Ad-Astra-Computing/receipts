@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // Digest computes the credential signing digest from SPEC.md section
@@ -38,10 +39,17 @@ func Digest(s SignedManifest) ([]byte, error) {
 
 // Sign signs m with key and returns the signed credential. The same
 // (manifest, key) pair always yields the same signature bytes.
+//
+// Sign normalizes m.CreatedAt to whole UTC seconds, as SPEC.md section
+// 3 requires of every timestamp in a bundle. Build already does this,
+// but a producer may assemble a Manifest by hand, and a credential is
+// not conforming if its wire timestamp carries sub-second precision or
+// a zone offset other than Z.
 func Sign(m Manifest, key ed25519.PrivateKey) (SignedManifest, error) {
 	if len(key) != ed25519.PrivateKeySize {
 		return SignedManifest{}, errors.New("c2pa: invalid signing key")
 	}
+	m.CreatedAt = m.CreatedAt.UTC().Truncate(time.Second)
 	pub := key.Public().(ed25519.PublicKey)
 	signed := SignedManifest{
 		Manifest: m,
@@ -59,11 +67,16 @@ func Sign(m Manifest, key ed25519.PrivateKey) (SignedManifest, error) {
 }
 
 // Verify recomputes the credential digest and checks the signature
-// against the embedded public key. Malformed input is an error, never
-// a panic, so a verifier can reject a credential rather than abort.
+// against the embedded public key, and rejects a `created_at` that is
+// not whole-second UTC (SPEC.md section 3). Malformed input is an
+// error, never a panic, so a verifier can reject a credential rather
+// than abort.
 func Verify(s SignedManifest) error {
 	if s.Signature.Alg != "Ed25519" {
 		return fmt.Errorf("c2pa: unsupported alg %q", s.Signature.Alg)
+	}
+	if s.CreatedAt.Nanosecond() != 0 || s.CreatedAt.Location() != time.UTC {
+		return errors.New("c2pa: created_at is not a whole-second UTC timestamp")
 	}
 	pub, err := base64.RawURLEncoding.DecodeString(s.Signature.PublicKey)
 	if err != nil || len(pub) != ed25519.PublicKeySize {

@@ -16,10 +16,18 @@ import (
 // Sign fills in b.Signature with an Ed25519 signature over the signing
 // digest and returns the signed bundle. The key stays the caller's:
 // this package never loads, stores or generates one.
+//
+// Sign normalizes b.Generated to whole UTC seconds before signing, as
+// SPEC.md section 3 requires. The signing digest hashes the rendered
+// RFC 3339 string, so a producer passing an un-truncated or non-UTC
+// time would otherwise emit a bundle whose wire form differs from the
+// string the signature covers: valid here, rejected by a verifier that
+// hashes the wire string.
 func Sign(b Bundle, key ed25519.PrivateKey) (Bundle, error) {
 	if len(key) != ed25519.PrivateKeySize {
 		return Bundle{}, errors.New("receipts: invalid signing key")
 	}
+	b.Generated = b.Generated.UTC().Truncate(time.Second)
 	pub := key.Public().(ed25519.PublicKey)
 	b.Signature = Signature{
 		Alg:       "Ed25519",
@@ -71,16 +79,30 @@ func SigningDigest(b Bundle) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
+// wholeSecondUTC reports whether t renders as a whole-second UTC
+// RFC 3339 timestamp, the only form SPEC.md section 3 allows. It reads
+// the value a JSON decoder produced, so it catches both sub-second
+// precision and a non-Z zone offset on the wire.
+func wholeSecondUTC(t time.Time) bool {
+	return t.Nanosecond() == 0 && t.Location() == time.UTC
+}
+
 // Verify checks that a bundle is internally consistent and correctly
 // signed: the outer signature, the embedded C2PA credential and its
-// bindings, and the timeline chain. It does not check the body hash
-// against a body; callers holding the body use VerifyBody.
+// bindings, and the timeline chain. It also rejects a `generated`
+// timestamp that is not whole-second UTC, because the signing digest
+// hashes the rendered timestamp and a verifier reading the wire string
+// must arrive at the same bytes this one does. It does not check the
+// body hash against a body; callers holding the body use VerifyBody.
 func Verify(b Bundle) error {
 	if b.Schema != Schema {
 		return fmt.Errorf("receipts: unknown schema %q", b.Schema)
 	}
 	if b.Signature.Alg != "Ed25519" {
 		return fmt.Errorf("receipts: unsupported alg %q", b.Signature.Alg)
+	}
+	if !wholeSecondUTC(b.Generated) {
+		return errors.New("receipts: generated is not a whole-second UTC timestamp")
 	}
 	pub, err := base64.RawURLEncoding.DecodeString(b.Signature.PublicKey)
 	if err != nil || len(pub) != ed25519.PublicKeySize {
