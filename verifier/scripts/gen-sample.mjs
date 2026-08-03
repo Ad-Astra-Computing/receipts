@@ -1,4 +1,6 @@
-// Regenerates the hero sample receipt with a realistic, multi-checkpoint
+// SPDX-License-Identifier: Apache-2.0
+//
+// Regenerates the hero sample receipt with a multi-checkpoint
 // composition timeline. Produces a valid folio.receipts/1 bundle: the
 // timeline chain (SPEC section 5) and the Ed25519 bundle signature
 // (SPEC section 6) are computed exactly as the verifier recomputes them,
@@ -57,18 +59,35 @@ function canonicalize(value) {
   return "{" + parts.join(",") + "}";
 }
 
-// The published body stays fixed: its sha256, the C2PA credential and
-// the disclosed AI range all depend on it, and the verifier checks the
-// body hash. We only rewrite the timeline.
+// The demo body. Its sha256 is recomputed below and written into both
+// post.sha256 and the credential's asset, so editing this prose keeps
+// the bundle internally consistent. The disclosed AI range is a
+// character offset into this string: check it if you move text before
+// the phrase "written with an AI".
+const body =
+  '+++\ntitle = "Keep the receipts"\n+++\n\n' +
+  "When anyone can generate text, a clean draft proves nothing. What still counts is " +
+  "the work behind it: the sources checked, the lines cut, and the parts written with " +
+  "an AI assistant, disclosed and signed. This note carries one, so you can see what a " +
+  "receipt looks like.\n";
+
 const current = JSON.parse(readFileSync(here("../src/sample.receipts.json"), "utf8"));
-const body = current.body;
 const bundle = current.bundle;
 
-// A realistic composition: the writer opens a draft, builds it up over a
-// couple of sessions with a plateau while thinking, cuts a paragraph
-// that did not work (the dip), then tightens to the final 49 words. Each
-// checkpoint is a real autosave: a timestamp, running word and character
-// counts, and a content hash of that draft state.
+const bodyHash = await sha256hex(body);
+const bodySize = Buffer.byteLength(body);
+bundle.post.sha256 = bodyHash;
+bundle.credential.asset.sha256 = bodyHash;
+bundle.credential.asset.size = bodySize;
+
+// The timeline is constructed, not observed: this is a demonstration
+// receipt, so the shape of a plausible composition is written out here
+// rather than recorded from a real writing session. Every signature
+// over it is genuine, so every check the verifier runs is a real check.
+// The curve: a draft opened, built up over a couple of sessions with a
+// plateau while thinking, a paragraph cut that did not work (the dip),
+// then tightened. Each checkpoint carries a timestamp, running word and
+// character counts, and a content hash of that draft state.
 const base = Date.parse("2026-07-18T09:12:00Z");
 const min = 60 * 1000;
 const steps = [
@@ -85,7 +104,7 @@ const steps = [
   { t: 78, words: 71, chars: 398 },
   { t: 92, words: 54, chars: 302 }, // tighten
   { t: 105, words: 51, chars: 286 },
-  { t: 118, words: 49, chars: 261 }, // final: matches the published prose
+  { t: 118, words: 48, chars: 269 }, // final: matches the published prose above
 ];
 
 const checkpoints = [];

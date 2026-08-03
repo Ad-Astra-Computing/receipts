@@ -1,19 +1,19 @@
 {
-  "body": "+++\ntitle = \"Keep the receipts\"\n+++\n\nWhen anyone can generate text, a clean draft proves nothing. What still counts is the work behind it: the sources checked, the lines cut, and the parts written with an AI assistant, disclosed and signed. This note is one of them, so you can see how it was made.\n",
+  "body": "+++\ntitle = \"Keep the receipts\"\n+++\n\nWhen anyone can generate text, a clean draft proves nothing. What still counts is the work behind it: the sources checked, the lines cut, and the parts written with an AI assistant, disclosed and signed. This note carries one, so you can see what a receipt looks like.\n",
   "bundle": {
     "schema": "folio.receipts/1",
     "generated": "2026-07-20T14:50:51Z",
     "post": {
       "title": "Keep the receipts",
       "url": "https://blog.example.com/post/keep-the-receipts/",
-      "sha256": "ae4c14ea42a7f5ed9aa8ac00b53afab37acb6c4d5cfde726f5fdc754666fe5ca"
+      "sha256": "5255bc2d12ffef3b1a83c2d9be60839f27d26d576862111d788f8258789f8d1b"
     },
     "credential": {
       "@context": "https://c2pa.org/ns/manifest/1.4",
       "type": "ContentCredential",
       "asset": {
-        "sha256": "ae4c14ea42a7f5ed9aa8ac00b53afab37acb6c4d5cfde726f5fdc754666fe5ca",
-        "size": 299,
+        "sha256": "5255bc2d12ffef3b1a83c2d9be60839f27d26d576862111d788f8258789f8d1b",
+        "size": 306,
         "mime": "text/markdown",
         "title": "Keep the receipts",
         "url": "https://blog.example.com/post/keep-the-receipts/"
@@ -75,8 +75,8 @@
       ],
       "signature": {
         "alg": "Ed25519",
-        "public_key": "dASYv092ApU5GwNRA8fl9KBm6skT8qCBH8ZO0fHTsaw",
-        "value": "rsGGZDaHRcjV2BpFW5b_5T6KdK8Y2ZHgybkGfTQMQT-pw9b4odksRzpw9WmDPJabcmgg1fi7CwjsXS5T9nVEAQ"
+        "public_key": "w0rcTkuvjsKMKzJy5ZhfzD95FsH7GKvkjfg5XpTU1lo",
+        "value": "vIIYinN5I6Y8y7JhGhlne6Z_SpNpPpxR0OqI3izEnGKnBvtyJVI65XDafweGt1-79bmdX5E7rdAIkCH8NTc7DQ"
       }
     },
     "ai_ranges": [
@@ -170,17 +170,17 @@
         },
         {
           "at": "2026-07-18T11:10:00Z",
-          "words": 49,
-          "chars": 261,
-          "hash": "6b5149cd74e1c1d8e29d7d520200929790a74c116aae5a2b3d407b16905edfed"
+          "words": 48,
+          "chars": 269,
+          "hash": "2edf05a50b5fd174371ec7bf488cbc4ca7476d73bda37e1997c357c37fbd66e8"
         }
       ],
-      "chain_hash": "5cd06471e99091e35db3e0c4a3b768ce87974239a2b539dd6251f1e0ed4de483"
+      "chain_hash": "16ee9e043dd6945f09549b315abf1726934f398cd836aa3c9c7bdc4257769b2e"
     },
     "signature": {
       "alg": "Ed25519",
-      "public_key": "dASYv092ApU5GwNRA8fl9KBm6skT8qCBH8ZO0fHTsaw",
-      "value": "ZDbMxN4p4mWYxaH7Z2763adtbidI_FvRWZbYPzQs4F2ROWSSFNXSLXPvFl1BF5-KBMs2pq88VHYe8dRA0918Bw"
+      "public_key": "w0rcTkuvjsKMKzJy5ZhfzD95FsH7GKvkjfg5XpTU1lo",
+      "value": "JWzQAIi8JaTXBtk4a1w7080Nwen06Cnqr00ye9tfTE-LgD84zHHumd14NXFSDKFukeYtJjFwFUr1aMsjB3seAw"
     }
   }
 }

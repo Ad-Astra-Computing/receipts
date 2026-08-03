@@ -51,7 +51,7 @@
           </div>
         </label>
         <p class="drop-hint" id="drop-hint">
-          This one's ours. Verify one of yours:
+          This one is a demonstration receipt with a constructed timeline, genuinely signed so every check here is real. Verify one of yours:
           <span class="on-pointer">drop a <code>.receipts.json</code> here, or </span>
           <label for="file" class="browse">browse</label>.
         </p>
@@ -62,7 +62,7 @@
         <dl class="anatomy">
           <div>
             <dt>Signature</dt>
-            <dd>One Ed25519 signature covers the receipt's fields: the schema and timestamp; the post title, URL and hash; the ranges labeled AI-written; the sourced claims; the timeline chain; and the embedded credential's signature value (bound, though this page does not re-verify the credential itself). Changing any without re-signing makes verification fail.</dd>
+            <dd>One Ed25519 signature covers the receipt's fields: the schema and timestamp; the post title, URL and hash; the ranges labeled AI-written; the sourced claims; the timeline chain; and the embedded credential's signature value. This page then verifies that credential in full: its own signature over its own canonical form, and that it binds the same body and the same key as the receipt around it. Changing any of it without re-signing makes verification fail.</dd>
           </div>
           <div>
             <dt>Timeline</dt>
@@ -109,6 +109,7 @@
           <tbody>
             <tr><td>Signature</td><td>None of the receipt's signed fields were altered</td><td>Ed25519</td></tr>
             <tr><td>AI disclosure</td><td>Ranges labeled AI-written are signature-bound</td><td>Ed25519</td></tr>
+            <tr><td>Content credential</td><td>The embedded credential is signed by the same key and names the same text</td><td>Ed25519 over RFC 8785</td></tr>
             <tr><td>Timeline</td><td>The composition checkpoints were not reordered or edited</td><td>SHA-256 chain</td></tr>
             <tr><td>Text match</td><td>The bundled text matches its hash</td><td>SHA-256</td></tr>
           </tbody>
