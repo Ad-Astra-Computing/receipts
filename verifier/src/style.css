@@ -309,3 +309,10 @@ footer .fine { font-size: var(--fs--2); }
   .receipt.animate .r-check { opacity: 1; transform: none; }
   .receipt.animate .curve-path { stroke-dasharray: none; stroke-dashoffset: 0; }
 }
+
+/* The Folio app mark in the Get Folio section: the gold the dock icon
+   wears, shown before download so the association is made on the page. */
+.cta .folio-mark {
+  display: block;
+  margin: 0 auto var(--sp-3, 12px);
+}
