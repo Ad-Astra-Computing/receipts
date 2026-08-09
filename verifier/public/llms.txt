@@ -1,0 +1,27 @@
+# Receipts of thought
+
+> A receipt of thought is a signed, tamper-evident record of how a piece of writing was actually made: the composition timeline, the passages an author discloses as AI-written, the claims they sourced and an embedded content credential. Anyone can verify one in a browser at receiptsofthought.com, with no server involved. The format and its verifier are open source under Apache-2.0.
+
+When text is cheap to generate, a clean final draft is no longer evidence that someone thought. What stays scarce is the record of the work itself. A receipt makes that record verifiable: tampering after signing is detectable, and the check runs entirely client-side so nothing you drop leaves your machine.
+
+## What a valid receipt proves
+
+- Nothing in the receipt was altered after it was signed: the title, the text, the composition timeline, the disclosed AI passages and the sourced claims.
+- The composition checkpoints were recorded in order and none was edited or removed later.
+- The embedded C2PA-aligned content credential carries its own valid signature and binds the same text and the same key as the receipt around it.
+
+## What it does not prove
+
+- Who holds the signing key. A key belongs to a machine and its owner, not to a verified identity.
+- That the timeline reflects honest work. A determined author could compose elsewhere and record a tidy history before signing.
+- That undisclosed text is human-written. Disclosure is the author's choice; the receipt binds what was disclosed, not what was not.
+
+## The pieces
+
+- The verifier: [receiptsofthought.com](https://receiptsofthought.com/) checks a `.receipts.json` bundle in the browser.
+- The format and verifier source: the open Apache-2.0 trust core, including the receipts format specification, the Ed25519 signing scheme and the client-side verifier.
+- Folio: the desktop writing app for macOS and Linux that produces receipts as you write. It is licensed under AGPL-3.0.
+
+## Who makes it
+
+Ad Astra Computing. The receipts format and verifier are open so anyone can read, reimplement or host the verification.

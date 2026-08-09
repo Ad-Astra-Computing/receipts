@@ -10,6 +10,61 @@
       name="description"
       content="When text is cheap to generate, the scarce resource is a verifiable record of how it was created. Folio keeps that record as you write; this page checks it in your browser, no server involved."
     />
+    <link rel="canonical" href="https://receiptsofthought.com/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Receipts of thought" />
+    <meta property="og:url" content="https://receiptsofthought.com/" />
+    <meta property="og:title" content="Receipts of thought" />
+    <meta
+      property="og:description"
+      content="A verifiable record of how a piece of writing was actually made. Drop a receipt and check it in your browser, no server involved."
+    />
+    <meta property="og:image" content="https://receiptsofthought.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Receipts of thought: a verifiable record of how writing was made." />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Receipts of thought" />
+    <meta
+      name="twitter:description"
+      content="A verifiable record of how a piece of writing was actually made. Check one in your browser, no server involved."
+    />
+    <meta name="twitter:image" content="https://receiptsofthought.com/og-image.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "name": "Receipts of thought verifier",
+            "url": "https://receiptsofthought.com/",
+            "applicationCategory": "SecurityApplication",
+            "operatingSystem": "Any modern web browser",
+            "browserRequirements": "Requires JavaScript. Runs entirely client-side.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "description": "Checks a .receipts.json bundle in the browser: the Ed25519 signature over the receipt's fields, the composition timeline hash chain, the disclosed AI passages, the sourced claims and the embedded content credential. No server, no upload.",
+            "publisher": {
+              "@type": "Organization",
+              "name": "Ad Astra Computing",
+              "url": "https://receiptsofthought.com/"
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Folio",
+            "applicationCategory": "Text editor",
+            "operatingSystem": "macOS, Linux",
+            "url": "https://github.com/Ad-Astra-Computing/folio",
+            "description": "A desktop writing app that keeps a signed, tamper-evident record of how a piece was composed and emits a portable receipt on publication.",
+            "publisher": { "@type": "Organization", "name": "Ad Astra Computing" }
+          }
+        ]
+      }
+    </script>
+
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
