@@ -252,6 +252,9 @@ section { padding: var(--s5) 0; border-top: 1px solid var(--hairline); }
 }
 section h2 { font-size: var(--fs-1); margin: 0 0 var(--s2); }
 section p { max-width: var(--measure); color: var(--bone-1); margin: 0 0 var(--s1); }
+/* A paragraph that follows the proves/anatomy bullet lists needs air above
+   it so it reads as a closing note, not a fourth bullet. */
+.anatomy + p { margin-top: var(--s3); }
 #thesis p { color: var(--bone-0); }
 
 .anatomy { display: grid; gap: var(--s2); margin: 0; }
