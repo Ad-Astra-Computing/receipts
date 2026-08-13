@@ -314,5 +314,5 @@ footer .fine { font-size: var(--fs--2); }
    wears, shown before download so the association is made on the page. */
 .cta .folio-mark {
   display: block;
-  margin: 0 auto var(--sp-3, 12px);
+  margin: 0 0 var(--s1);
 }
