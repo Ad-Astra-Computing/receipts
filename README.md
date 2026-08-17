@@ -133,6 +133,16 @@ npm run dev       # local page; drop a .receipts.json bundle onto it
 npm run build     # static output in dist/
 ```
 
+With Nix, and without installing a toolchain at all:
+
+```sh
+nix build github:Ad-Astra-Computing/receipts#verifier
+```
+
+leaves the built site in `result/`, ready to serve from any static host.
+`nix flake check` runs the Go suite and the gofmt gate, and `nix develop`
+gives you both toolchains.
+
 ## Relationship to C2PA
 
 A receipts bundle carries a C2PA-aligned content credential and adds the
