@@ -241,7 +241,7 @@ mark.ai {
 
 /* Content sections */
 section { padding: var(--s5) 0; border-top: 1px solid var(--hairline); }
-/* Alternating full-bleed bands for editorial rhythm (Codex). The
+/* Alternating full-bleed bands for editorial rhythm. The
    box-shadow spread paints the band edge-to-edge; clip-path stops it
    bleeding vertically. No DOM wrapper needed. */
 .band {
