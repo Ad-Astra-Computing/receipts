@@ -31,11 +31,18 @@ receipt verifies, so the bar is high and deliberate.
 
 ## Style
 
-- No em-dashes, no Oxford commas in prose. Plain, direct English.
+- No em-dashes, no Oxford commas in prose we write. Plain, direct
+  English. Adopted third-party text, such as CODE_OF_CONDUCT.md and
+  LICENSE, is reproduced verbatim and is not edited to match.
 - TypeScript passes `npm run check`. Go passes `gofmt -l .` with no
   output and `go vet ./...` clean.
 - Commits: imperative subject under 50 characters, no trailing period.
   One logical change per commit.
+
+## Conduct
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md).
+Criticize ideas, not contributors.
 
 ## Licensing of contributions
 
