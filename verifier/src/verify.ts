@@ -59,6 +59,20 @@ export interface Bundle {
 
 export const SCHEMA = "folio.receipts/1";
 
+// SPEC.md section 4: RFC 3339, UTC, whole seconds, Z designator. The
+// timeline chain and the signing digest both hash these as strings, so
+// the spelling is part of the format rather than a display choice. Go
+// refuses a bundle spelled any other way at parse; this is the same
+// refusal on this side.
+const CANONICAL_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+
+export function isCanonicalTime(s: unknown): boolean {
+  if (typeof s !== "string" || !CANONICAL_TIME.test(s)) return false;
+  // The pattern admits 2026-02-31T25:00:00Z, which is not a date.
+  const t = Date.parse(s);
+  return Number.isFinite(t) && new Date(t).toISOString().replace(/\.\d{3}Z$/, "Z") === s;
+}
+
 const enc = new TextEncoder();
 
 async function sha256(bytes: Uint8Array): Promise<Uint8Array> {
@@ -75,7 +89,23 @@ function toHex(b: Uint8Array): string {
   return out;
 }
 
+// SPEC.md section 3: unpadded base64url. atob is far more forgiving than
+// that, accepting padding and the standard +/ alphabet, so a signature
+// re-spelled either way decodes to the same bytes and verifies here while
+// Go's RawURLEncoding refuses it. Same bundle, two verdicts. Reject the
+// spelling, not just the bytes.
+const B64URL = /^[A-Za-z0-9_-]+$/;
+
+export function isCanonicalB64url(s: unknown): boolean {
+  // Unpadded base64url is never 1 mod 4 characters long: that length
+  // cannot be produced by encoding any byte string.
+  return typeof s === "string" && s.length > 0 && s.length % 4 !== 1 && B64URL.test(s);
+}
+
 function b64urlToBytes(s: string): Uint8Array {
+  if (!isCanonicalB64url(s)) {
+    throw new Error("value is not unpadded base64url");
+  }
   const pad = s.length % 4 === 0 ? "" : "=".repeat(4 - (s.length % 4));
   const bin = atob(s.replace(/-/g, "+").replace(/_/g, "/") + pad);
   const out = new Uint8Array(bin.length);
@@ -199,6 +229,35 @@ export async function verifyBundle(b: Bundle, body?: string): Promise<VerifyResu
   const checks: Check[] = [];
 
   checks.push({ name: "Schema recognised", ok: b.schema === SCHEMA });
+
+  // Before any hashing: is this bundle written in the one wire form the
+  // format defines? Every hash below is over rendered strings, so a
+  // bundle spelled differently would be checked against text no other
+  // implementation would produce.
+  const wireProblems: string[] = [];
+  if (!isCanonicalTime(b.generated)) wireProblems.push("generated");
+  for (const [i, cp] of (b.timeline?.checkpoints ?? []).entries()) {
+    if (!isCanonicalTime(cp?.at)) wireProblems.push(`timeline.checkpoints[${i}].at`);
+  }
+  for (const [i, r] of (b.ai_ranges ?? []).entries()) {
+    if (r?.when !== undefined && r.when !== null && !isCanonicalTime(r.when)) {
+      wireProblems.push(`ai_ranges[${i}].when`);
+    }
+  }
+  for (const [label, sig] of [
+    ["signature", b.signature],
+    ["credential.signature", b.credential?.signature],
+  ] as const) {
+    if (!isCanonicalB64url(sig?.public_key)) wireProblems.push(`${label}.public_key`);
+    if (!isCanonicalB64url(sig?.value)) wireProblems.push(`${label}.value`);
+  }
+  checks.push({
+    name: "Wire forms canonical",
+    ok: wireProblems.length === 0,
+    detail: wireProblems.length === 0
+      ? undefined
+      : `not in the form the format requires: ${wireProblems.join(", ")}`,
+  });
 
   let sigOk = false;
   try {

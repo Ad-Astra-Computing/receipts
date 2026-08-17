@@ -72,3 +72,62 @@ describe("verifyBundle against a Go-signed fixture", () => {
     expect((fixture.bundle.ai_ranges ?? []).length).toBeGreaterThan(0);
   });
 });
+
+// SPEC.md section 4 fixes one wire form for every hashed timestamp, and
+// section 3 requires unpadded base64url. The Go implementation refuses
+// anything else at parse. This verifier has to agree, or the same bytes
+// get two verdicts depending on who checks them, which is the one thing
+// a format meant for independent verifiers cannot do.
+function clone(): Bundle {
+  return JSON.parse(JSON.stringify(fixture.bundle)) as Bundle;
+}
+
+describe("canonical wire forms", () => {
+  // These must fail on their own named check, not merely because the
+  // chain no longer matches. A bundle whose chain_hash was computed over
+  // the non-canonical string is internally consistent to a verifier that
+  // hashes the literal wire text, and Go now refuses such a bundle at
+  // parse. If this verifier only noticed via the chain, the two would
+  // still disagree on the bundles that matter.
+  const canonicalCheck = (res: { checks: { name: string; ok: boolean }[] }) =>
+    res.checks.find((c) => /canonical/i.test(c.name));
+
+  it("rejects a checkpoint timestamp that is not whole-second UTC", async () => {
+    for (const at of [
+      "2026-01-01T05:00:00+05:00",
+      "2026-01-01T00:00:00.5Z",
+      "2026-01-01T00:00:00+00:00",
+    ]) {
+      const b = clone();
+      b.timeline.checkpoints[0].at = at;
+      const res = await verifyBundle(b);
+      expect(canonicalCheck(res)?.ok, `accepted ${at}`).toBe(false);
+      expect(res.ok).toBe(false);
+    }
+  });
+
+  it("accepts the canonical form", async () => {
+    const res = await verifyBundle(fixture.bundle, fixture.body);
+    expect(canonicalCheck(res)?.ok).toBe(true);
+  });
+
+  it("rejects a generated timestamp that is not whole-second UTC", async () => {
+    const b = clone();
+    b.generated = "2026-01-01T00:00:00.250Z";
+    const res = await verifyBundle(b);
+    expect(canonicalCheck(res)?.ok).toBe(false);
+  });
+
+  it("rejects a signature re-encoded as padded or standard base64", async () => {
+    const good = fixture.bundle.signature.value;
+    for (const spelling of [good + "=", good.replace(/-/g, "+").replace(/_/g, "/")]) {
+      if (spelling === good) continue;
+      const b = clone();
+      b.signature.value = spelling;
+      const res = await verifyBundle(b);
+      expect(canonicalCheck(res)?.ok, `accepted ${spelling.slice(-8)}`).toBe(false);
+      expect(res.ok).toBe(false);
+    }
+  });
+});
+

@@ -61,9 +61,13 @@ func TestSignNormalizesGenerated(t *testing.T) {
 }
 
 // A bundle whose `generated` arrives with sub-second precision or a
-// non-Z offset must be rejected outright. The Go signing digest
-// truncates before hashing, so without this check such a bundle
+// non-Z offset must be rejected outright. The Go signing digest renders
+// the timestamp before hashing, so without this check such a bundle
 // verifies here and fails in the browser, which hashes the wire string.
+//
+// The refusal happens at parse rather than at Verify: a bundle that
+// cannot be spoken about consistently should not become a value that
+// later code has to keep remembering to distrust.
 func TestVerifyRejectsNonWholeSecondGenerated(t *testing.T) {
 	key := testKey(t)
 	for name, replacement := range map[string]string{
@@ -84,15 +88,13 @@ func TestVerifyRejectsNonWholeSecondGenerated(t *testing.T) {
 				t.Fatal("test fixture did not contain the expected generated field")
 			}
 			var parsed receipts.Bundle
-			if err := json.Unmarshal([]byte(tampered), &parsed); err != nil {
-				t.Fatalf("unmarshal: %v", err)
-			}
-			err = receipts.Verify(parsed)
+			err = json.Unmarshal([]byte(tampered), &parsed)
 			if err == nil {
 				t.Fatal("expected a non-whole-second UTC generated to be rejected")
 			}
-			if !strings.Contains(err.Error(), "generated") {
-				t.Fatalf("error %q does not name the offending field", err)
+			if !strings.Contains(err.Error(), "generated") &&
+				!strings.Contains(err.Error(), replacement[1:len(replacement)-1]) {
+				t.Fatalf("error %q names neither the field nor the offending value", err)
 			}
 		})
 	}
