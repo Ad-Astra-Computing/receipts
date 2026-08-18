@@ -53,6 +53,9 @@ type Asset struct {
 	MIME   string `json:"mime"`
 	Title  string `json:"title,omitempty"`
 	URL    string `json:"url,omitempty"`
+
+	// Unknown members, preserved so the digest covers what was signed.
+	extras map[string]json.RawMessage
 }
 
 // GeneratorInfo describes the tool chain that produced the manifest.
@@ -60,6 +63,9 @@ type GeneratorInfo struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
 	URL     string `json:"url,omitempty"`
+
+	// Unknown members, preserved so the digest covers what was signed.
+	extras map[string]json.RawMessage
 }
 
 // Assertion is one labelled claim about the asset. Data is carried as
@@ -68,6 +74,9 @@ type GeneratorInfo struct {
 type Assertion struct {
 	Label string          `json:"label"`
 	Data  json.RawMessage `json:"data"`
+
+	// Unknown members, preserved so the digest covers what was signed.
+	extras map[string]json.RawMessage
 }
 
 // Signature is the Ed25519 envelope.
@@ -75,6 +84,9 @@ type Signature struct {
 	Alg       string `json:"alg"`
 	PublicKey string `json:"public_key"` // base64url, unpadded, raw 32-byte key
 	Value     string `json:"value"`      // base64url, unpadded, raw 64-byte signature
+
+	// Unknown members, preserved so the digest covers what was signed.
+	extras map[string]json.RawMessage
 }
 
 // SignedManifest is a manifest plus its signature.
