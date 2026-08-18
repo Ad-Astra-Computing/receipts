@@ -4,9 +4,18 @@ Version 1 (`folio.receipts/1`)
 
 This document specifies the receipts bundle: a portable, signed record
 of how a piece of writing was made. It is written so that anyone can
-implement a producer or a verifier from this text alone. The reference
-verifier ([`verifier/src/verify.ts`](verifier/src/verify.ts)) is
-normative where this prose is ambiguous.
+implement a producer or a verifier from this text alone.
+
+This document is normative. The implementations in this repository, the
+Go module and the TypeScript verifier, are references: where one of them
+disagrees with this text, the implementation is wrong. Naming the code as
+the tie-breaker, as an earlier version of this document did, made the
+specification circular and left an independent implementer reading
+TypeScript to learn the format.
+
+Where this text is genuinely silent, that is a defect in it. Please
+report it rather than reading the code, so the answer lands here and
+every implementation gets it.
 
 ## 1. What a bundle asserts
 
@@ -358,6 +367,44 @@ The two signatures share one key. The same Ed25519 key that
 signs the outer bundle signs the embedded credential, so a verifier
 that trusts the author's key trusts both at once, and a reader sees a
 single fingerprint.
+
+### 7.0 The credential object
+
+A credential MUST have the shape below. A signature establishes that this
+object was signed by the key it names; it does not establish that the
+object is a content credential. Without a required shape, a signed pair
+of fields carrying an asset hash and a signature satisfies every
+cryptographic check, and a verifier that then calls it a valid content
+credential has claimed more than it tested.
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `@context` | string | yes | Exactly `https://c2pa.org/ns/manifest/1.4`. |
+| `type` | string | yes | Exactly `ContentCredential`. |
+| `asset` | object | yes | See below. |
+| `claim_generator` | string | yes | Non-empty. Conventionally `Name/Version`. |
+| `claim_generator_info` | object | yes | `name` is required and non-empty; `version` and `url` are optional strings. |
+| `created_at` | string | yes | Canonical timestamp (section 4). |
+| `assertions` | array | yes | MAY be empty. Each element is an object with a `label` string and a `data` value. |
+| `signature` | object | yes | `alg`, `public_key`, `value`, as in section 3.1. |
+
+`credential.asset`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `sha256` | string | yes | 64 lowercase hex characters, and MUST equal `post.sha256`. |
+| `size` | integer | yes | Non-negative: the published body's length in bytes. |
+| `mime` | string | yes | Non-empty. |
+| `title` | string | no | |
+| `url` | string | no | |
+
+Unlike the bundle, the credential MAY carry members this specification
+does not define, at any depth. Its own signature is computed over the
+whole object (section 7.1), so an unknown member there is signed rather
+than smuggled. A verifier MUST preserve every member it does not
+recognise when computing the digest: dropping one means hashing a
+smaller object than the one that was signed, and two verifiers that drop
+different members will disagree about a credential both should accept.
 
 ### 7.1 Signing the credential
 
