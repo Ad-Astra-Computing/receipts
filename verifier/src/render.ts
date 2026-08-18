@@ -30,6 +30,59 @@ function safeHttp(url: string): string | null {
 // the percentage and the in-place highlighting build on this, so
 // overlapping or out-of-bounds ranges can neither inflate the percent
 // past 100 nor duplicate/reorder the displayed body.
+/**
+ * Converts UTF-8 byte offsets into JavaScript string indices.
+ *
+ * SPEC section 4: ai_ranges are byte offsets into the published body,
+ * because a byte offset is the one position every language can agree on
+ * without a table. JavaScript indexes strings in UTF-16 code units, so
+ * the two only coincide for ASCII. An accented letter costs one extra
+ * byte, an emoji three, and using the raw numbers moves the highlight
+ * left by exactly that much: wrong words, marked confidently, and only
+ * for text that is not plain English.
+ *
+ * Offsets that land inside a character (a corrupt or hostile bundle)
+ * snap to the character boundary rather than splitting it.
+ */
+export function byteRangesToStringRanges(
+  body: string,
+  ranges: { from: number; to: number }[],
+): { from: number; to: number }[] {
+  if (ranges.length === 0) return [];
+  // One walk over the body, recording the string index at each byte
+  // boundary. byteToIndex[b] is the string index of the character that
+  // starts at byte b.
+  const byteToIndex = new Map<number, number>();
+  let byteLen = 0;
+  for (let i = 0; i < body.length; ) {
+    byteToIndex.set(byteLen, i);
+    const cp = body.codePointAt(i) as number;
+    const width = cp > 0xffff ? 2 : 1; // surrogate pair or single unit
+    byteLen += cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+    i += width;
+  }
+  byteToIndex.set(byteLen, body.length);
+
+  const at = (byteOffset: number): number => {
+    if (byteOffset <= 0) return 0;
+    if (byteOffset >= byteLen) return body.length;
+    const hit = byteToIndex.get(byteOffset);
+    if (hit !== undefined) return hit;
+    // Inside a character: snap forward to the next boundary.
+    for (let b = byteOffset + 1; b <= byteLen; b++) {
+      const next = byteToIndex.get(b);
+      if (next !== undefined) return next;
+    }
+    return body.length;
+  };
+
+  return ranges.map((r) => {
+    const from = at(r.from);
+    const to = at(r.to);
+    return { from, to: Math.max(from, to) };
+  });
+}
+
 export function mergeRanges(
   ranges: { from: number; to: number }[],
   bodyLen: number,
@@ -52,7 +105,7 @@ export function disclosedChars(ranges: { from: number; to: number }[], bodyLen: 
   return mergeRanges(ranges, bodyLen).reduce((n, r) => n + (r.to - r.from), 0);
 }
 
-function verdictSentence(bundle: Bundle, body: string | undefined, res: VerifyResult): string {
+export function verdictSentence(bundle: Bundle, body: string | undefined, res: VerifyResult): string {
   if (!res.ok) {
     const failed = res.checks.filter((c) => !c.ok).map((c) => c.name.toLowerCase());
     return `Not verified. Problem with: ${failed.join(", ")}.`;
@@ -62,7 +115,10 @@ function verdictSentence(bundle: Bundle, body: string | undefined, res: VerifyRe
   let aiPct = 0;
   const ai = bundle.ai_ranges ?? [];
   if (body && ai.length) {
-    aiPct = Math.round((disclosedChars(ai, body.length) / Math.max(1, body.length)) * 100);
+    // Convert first: these are byte offsets, and body.length is UTF-16
+    // code units, so a non-ASCII body produced a wrong percentage.
+    const inString = byteRangesToStringRanges(body, ai);
+    aiPct = Math.round((disclosedChars(inString, body.length) / Math.max(1, body.length)) * 100);
   }
   const cpNote = cps.length ? `, ${words} words over ${cps.length} checkpoint${cps.length === 1 ? "" : "s"}` : "";
   // Only report a percentage when a body was present to compute it against.
@@ -70,14 +126,19 @@ function verdictSentence(bundle: Bundle, body: string | undefined, res: VerifyRe
   // Only claim checks that actually ran. The text check runs only when
   // a body was supplied, so mention "bundled text" only if it did. The
   // C2PA credential is carried inside the signed receipt (its signature
-  // value is bound) but not independently re-verified here.
-  const checked = ["the receipt's signature", "the timeline chain"];
-  if (res.checks.some((c) => c.name.toLowerCase().includes("text"))) {
+  // value is bound) but re-verified in full by verifyBundle.
+  const checked = ["the receipt's signature", "the content credential", "the timeline chain"];
+  if (res.bodyChecked) {
     checked.push("the bundled text");
   }
   const list =
     checked.length > 1 ? `${checked.slice(0, -1).join(", ")} and ${checked[checked.length - 1]}` : checked[0];
-  return `Verified. ${list[0].toUpperCase()}${list.slice(1)} check out${cpNote}${aiNote}.`;
+  // Saying nothing about an absent body lets "verified" be read as "the
+  // writing matches", which is a stronger statement than what ran.
+  const bodyNote = res.bodyChecked
+    ? ""
+    : " The writing itself was not supplied, so it was not compared against this receipt.";
+  return `Verified. ${list[0].toUpperCase()}${list.slice(1)} check out${cpNote}${aiNote}.${bodyNote}`;
 }
 
 function curve(bundle: Bundle): HTMLElement {
@@ -198,9 +259,38 @@ function tapeBody(body: string, ranges: { from: number; to: number }[], ellipsis
   return wrap;
 }
 
+/** Whether the shape this renderer reads is actually present. */
+function isRenderable(b: unknown): b is Bundle {
+  if (typeof b !== "object" || b === null) return false;
+  const o = b as Record<string, unknown>;
+  const post = o.post as Record<string, unknown> | undefined;
+  const timeline = o.timeline as Record<string, unknown> | undefined;
+  return (
+    typeof post === "object" && post !== null &&
+    typeof timeline === "object" && timeline !== null &&
+    Array.isArray(timeline.checkpoints)
+  );
+}
+
 export function renderReceipt(inner: HTMLElement, bundle: Bundle, body: string | undefined, res: VerifyResult) {
   inner.replaceChildren(); // DOM/text-only: never innerHTML with bundle content
   inner.classList.toggle("failed", !res.ok);
+
+  // verifyBundle is total over any input, but this is not: it reads
+  // bundle.post.title and bundle.timeline directly, so a document that
+  // failed the structural checks would throw here and break the page,
+  // which is the outcome making verification total was meant to prevent.
+  // A document that is not shaped like a receipt has nothing to render
+  // beyond why it was refused.
+  if (!isRenderable(bundle)) {
+    const head = el("div", "r-head");
+    head.append(el("div", "r-title", "Not a receipt"));
+    inner.append(head);
+    for (const c of res.checks.filter((c) => !c.ok)) {
+      inner.append(el("div", "r-check fail", `${c.name}: ${c.detail ?? "failed"}`));
+    }
+    return;
+  }
 
   // Title + fingerprint (ledger header)
   const head = el("div", "r-head");
@@ -234,7 +324,11 @@ export function renderReceipt(inner: HTMLElement, bundle: Bundle, body: string |
   const ai = bundle.ai_ranges ?? [];
   if (body !== undefined && ai.length > 0) {
     const { prose, offset } = stripFrontmatter(body);
-    const shifted = ai.map((r) => ({ from: r.from - offset, to: r.to - offset }));
+    // Byte offsets first, against the whole body; `offset` is a string
+    // index into it, so subtracting it from bytes mixed two different
+    // units and shifted the marks twice over.
+    const inString = byteRangesToStringRanges(body, ai);
+    const shifted = inString.map((r) => ({ from: r.from - offset, to: r.to - offset }));
     const { text, ellipsis } = excerptProse(prose, Math.max(0, ...shifted.map((r) => r.to)));
     inner.append(tapeBody(text, shifted, ellipsis));
   }

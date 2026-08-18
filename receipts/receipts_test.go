@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -51,8 +52,8 @@ func buildBundle(t *testing.T, key ed25519.PrivateKey, body string) receipts.Bun
 	}
 
 	timeline := receipts.DigestTimeline([]receipts.Checkpoint{
-		{At: time.Date(2026, 7, 20, 13, 0, 0, 0, time.UTC), Words: 40, Chars: 210, Hash: "aa"},
-		{At: time.Date(2026, 7, 20, 13, 20, 0, 0, time.UTC), Words: 90, Chars: 480, Hash: "bb"},
+		{At: time.Date(2026, 7, 20, 13, 0, 0, 0, time.UTC), Words: 40, Chars: 210, Hash: strings.Repeat("a", 64)},
+		{At: time.Date(2026, 7, 20, 13, 20, 0, 0, time.UTC), Words: 90, Chars: 480, Hash: strings.Repeat("b", 64)},
 	})
 
 	b := receipts.Bundle{
@@ -174,8 +175,8 @@ func TestSignRejectsBadKey(t *testing.T) {
 func TestDigestTimelineChainsEveryField(t *testing.T) {
 	at := time.Date(2026, 7, 20, 13, 0, 0, 0, time.UTC)
 	base := []receipts.Checkpoint{
-		{At: at, Words: 40, Chars: 210, Hash: "aa"},
-		{At: at.Add(time.Minute), Words: 90, Chars: 480, Hash: "bb"},
+		{At: at, Words: 40, Chars: 210, Hash: strings.Repeat("a", 64)},
+		{At: at.Add(time.Minute), Words: 90, Chars: 480, Hash: strings.Repeat("b", 64)},
 	}
 	d := receipts.DigestTimeline(base)
 	if !receipts.VerifyTimeline(d) {

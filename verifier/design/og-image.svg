@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0b0b0d"/>
+  <!-- hairline frame -->
+  <rect x="40" y="40" width="1120" height="550" fill="none" stroke="#26262b" stroke-width="2"/>
+
+  <!-- receipt motif, right side: bone card with torn perforated foot and ink lines -->
+  <g transform="translate(830,150)">
+    <path d="M0 0 h230 v250 l-28.75 23 -28.75 -23 -28.75 23 -28.75 -23 -28.75 23 -28.75 -23 -28.75 23 -28.75 -23 z"
+          fill="#f2f1ee" stroke="#1a1a1e" stroke-width="4" stroke-linejoin="round"/>
+    <line x1="34" y1="52" x2="196" y2="52" stroke="#1a1a1e" stroke-width="6" stroke-linecap="round"/>
+    <line x1="34" y1="96" x2="196" y2="96" stroke="#1a1a1e" stroke-width="6" stroke-linecap="round"/>
+    <line x1="34" y1="140" x2="150" y2="140" stroke="#1a1a1e" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="115" cy="196" r="20" fill="none" stroke="#1a8a4a" stroke-width="7"/>
+    <path d="M104 196 l8 8 15 -17" fill="none" stroke="#1a8a4a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="90" y="250" font-family="Charter, Georgia, 'Times New Roman', serif" font-size="76" font-weight="600" fill="#f0efed">Receipts of thought<tspan fill="#c9a86a">.</tspan></text>
+
+  <!-- tagline -->
+  <text x="92" y="330" font-family="Charter, Georgia, serif" font-size="34" fill="#b7b6b2">When text is cheap to generate, the scarce</text>
+  <text x="92" y="378" font-family="Charter, Georgia, serif" font-size="34" fill="#b7b6b2">resource is a verifiable record of how it</text>
+  <text x="92" y="426" font-family="Charter, Georgia, serif" font-size="34" fill="#b7b6b2">was created.</text>
+
+  <!-- footer line -->
+  <text x="92" y="540" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="24" fill="#74737a">receiptsofthought.com  ·  verify in your browser, no server</text>
+</svg>

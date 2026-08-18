@@ -1,0 +1,40 @@
+version: 2
+updates:
+  # The workflows pin every action to a commit SHA, which is the right
+  # thing and also means nothing tells us when a pin goes stale. This is
+  # the other half of that: weekly PRs that move the SHA and update the
+  # trailing version comment.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # Majors stay separate. Grouped with everything else, one breaking
+      # major holds unrelated patches behind a PR nobody can merge.
+      actions:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  # The Go module is standard library only and is meant to stay that way
+  # (see CONTRIBUTING.md), so this should normally have nothing to do. It
+  # is here so that the day a dependency does appear, it is already
+  # watched rather than silently unwatched.
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      gomod:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  # The client-side verifier, which is the part that actually ships to a
+  # reader's browser.
+  - package-ecosystem: npm
+    directory: /verifier
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
+        update-types: [minor, patch]

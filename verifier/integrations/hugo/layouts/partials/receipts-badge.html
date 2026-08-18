@@ -3,22 +3,34 @@
   Drop into your Hugo theme and call {{ partial "receipts-badge.html" . }}
   in single.html where you want the badge.
 
-  It links a reader to the public verifier for this post's receipts
-  bundle. Point it at the bundle URL via a `receipts` page param, or
-  publish the bundle beside the post as `receipts.json` (the default).
+  It gives a reader the post's receipts bundle and a link to the
+  verifier that checks it.
+
+  The badge deliberately does NOT hand the verifier a URL to fetch. The
+  verifier never makes a network request: its content-security policy
+  forbids one, which is what lets it promise that a bundle you check
+  never leaves your machine. So the reader downloads the bundle and
+  drops it on the verifier, which is two clicks and no trust in us.
+
+  Point it at the bundle with a `receipts` page param, or publish the
+  bundle beside the post as `receipts.json` (the default).
 */ -}}
 {{- $receipts := .Params.receipts | default (printf "%sreceipts.json" .Permalink) -}}
 {{- with $receipts -}}
-<a class="folio-receipts-badge"
-   href="https://receiptsofthought.com/?src={{ . | urlquery }}"
-   target="_blank" rel="noopener"
-   title="See how this piece was made">
+<a class="folio-receipts-badge" href="{{ . }}" download
+   title="Download this post's receipt">
   <span aria-hidden="true">◆</span> Receipts of thought
 </a>
+<a class="folio-receipts-verify"
+   href="https://receiptsofthought.com/"
+   target="_blank" rel="noopener"
+   title="Check the receipt in your browser">verify it</a>
 <style>
 .folio-receipts-badge{display:inline-flex;align-items:center;gap:.4em;
   font:500 12px/1 system-ui,sans-serif;color:#8a6a2c;text-decoration:none;
   border:1px solid rgba(138,106,44,.35);border-radius:4px;padding:.4em .7em}
 .folio-receipts-badge:hover{background:rgba(201,168,106,.1)}
+.folio-receipts-verify{font:400 12px/1 system-ui,sans-serif;color:#8a6a2c;
+  margin-left:.5em;text-decoration:underline}
 </style>
 {{- end -}}

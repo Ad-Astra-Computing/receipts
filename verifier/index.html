@@ -10,6 +10,61 @@
       name="description"
       content="When text is cheap to generate, the scarce resource is a verifiable record of how it was created. Folio keeps that record as you write; this page checks it in your browser, no server involved."
     />
+    <link rel="canonical" href="https://receiptsofthought.com/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Receipts of thought" />
+    <meta property="og:url" content="https://receiptsofthought.com/" />
+    <meta property="og:title" content="Receipts of thought" />
+    <meta
+      property="og:description"
+      content="A signed, tamper-evident account of how a piece of writing was made. Drop a receipt and check it in your browser, no server involved."
+    />
+    <meta property="og:image" content="https://receiptsofthought.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Receipts of thought: a verifiable record of how writing was made." />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Receipts of thought" />
+    <meta
+      name="twitter:description"
+      content="A signed, tamper-evident account of how a piece of writing was made. Check one in your browser, no server involved."
+    />
+    <meta name="twitter:image" content="https://receiptsofthought.com/og-image.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "name": "Receipts of thought verifier",
+            "url": "https://receiptsofthought.com/",
+            "applicationCategory": "SecurityApplication",
+            "operatingSystem": "Any modern web browser",
+            "browserRequirements": "Requires JavaScript. Runs entirely client-side.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "description": "Checks a .receipts.json bundle in the browser: the Ed25519 signature over the receipt's fields, the composition timeline hash chain, the disclosed AI passages, the sourced claims and the embedded content credential. No server, no upload.",
+            "publisher": {
+              "@type": "Organization",
+              "name": "Ad Astra Computing",
+              "url": "https://receiptsofthought.com/"
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Folio Web",
+            "applicationCategory": "Text editor",
+            "operatingSystem": "Any modern web browser",
+            "url": "https://web.receiptsofthought.com",
+            "description": "A browser writing app that keeps a signed, tamper-evident record of how a piece was composed and emits a portable receipt on publication.",
+            "publisher": { "@type": "Organization", "name": "Ad Astra Computing" }
+          }
+        ]
+      }
+    </script>
+
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -34,15 +89,17 @@
             verifiable record of how it was created.
           </p>
           <p class="hero-copy">
-            Folio is a desktop writing app that keeps that record as you
-            write: a timeline of the composition, the sources behind each
-            claim, the passages an AI wrote that the author chose to
-            disclose. Publishing produces a portable receipt. This page
-            checks one, in your browser, with no server involved.
+            Folio keeps that record as you write: a timeline of the
+            composition, the sources behind each claim, and the passages an
+            AI wrote that the author chose to disclose. Publishing produces
+            a portable receipt. This page checks one, in your browser, with
+            no server involved.
           </p>
-          <p class="meta">checked in your browser · no server · nothing you drop leaves your machine</p>
+          <p class="meta">checked in your browser · nothing you drop leaves your machine</p>
         </div>
 
+        <div class="verifier">
+          <p class="drop-lede" id="drop-lede">Drop a receipt here, or choose a file</p>
         <label class="receipt dropzone" for="file" id="receipt-card">
           <input
             id="file"
@@ -52,7 +109,9 @@
             aria-describedby="drop-hint"
           />
           <div class="playhead" aria-hidden="true"></div>
-          <div class="receipt-inner" id="receipt-inner">
+          <span class="demo-badge" id="demo-badge">Demo receipt</span>
+          <span class="drop-overlay" aria-hidden="true">Drop to verify</span>
+          <div class="receipt-inner" id="receipt-inner" aria-busy="false">
             <!-- rendered by render.ts -->
           </div>
         </label>
@@ -61,6 +120,7 @@
           <span class="on-pointer">drop a <code>.receipts.json</code> here, or </span>
           <label for="file" class="browse">browse</label>.
         </p>
+        </div>
       </section>
 
       <section id="thesis" aria-labelledby="thesis-h">
@@ -73,9 +133,10 @@
         </p>
         <p>
           Folio keeps that record as you write, then signs it. Not to prove
-          what you did not do, an unwinnable game, but to keep the receipts
-          for how the piece was made. Receipts of thought, not proof of
-          innocence. The record is the asset.
+          you did nothing wrong, which is an unwinnable game, but to put an
+          account of how the piece was made on the record, where changing it
+          later is detectable. Receipts of thought, not proof of innocence.
+          The record is the asset.
         </p>
         <p>
           It is for anyone whose work is doubted by default. Writers whose
@@ -94,7 +155,7 @@
             <dd>
               <ul>
                 <li>Nothing in the receipt was altered after signing: title, text, timeline, disclosed AI passages, sourced claims.</li>
-                <li>The composition checkpoints were recorded in order, and none was edited or removed later.</li>
+                <li>The composition timeline is exactly the one that was signed: no checkpoint has been reordered, inserted or removed since.</li>
                 <li>The text shown is the text that was signed.</li>
                 <li>The embedded C2PA-aligned content credential carries its own valid signature and names the same text and the same key as the receipt around it. This page verifies that credential's signature and bindings itself.</li>
               </ul>
@@ -105,7 +166,7 @@
             <dd>
               <ul>
                 <li>Who holds the signing key. A key belongs to a machine and its owner, not to a verified identity.</li>
-                <li>That the timeline reflects honest work. A determined author could compose elsewhere and record a tidy history before signing.</li>
+                <li>That the timeline reflects honest work. The signature binds the timeline presented at signing, so an author could compose elsewhere, or prune the record, and sign the tidy version.</li>
                 <li>That undisclosed text is human-written. Disclosure is the author's choice; the receipt binds what was disclosed, not what was not.</li>
               </ul>
             </dd>
@@ -163,18 +224,23 @@
       </section>
 
       <section id="folio" aria-labelledby="folio-h" class="cta">
-        <svg class="folio-mark" viewBox="0 0 256 256" width="48" height="48" aria-hidden="true">
-          <path fill="#c9a86a" d="M 8 8 H 248 V 192 L 192 248 H 8 Z" />
-          <path stroke="#a48a52" stroke-width="4" stroke-linecap="round" d="M 192 248 L 248 192" />
-          <g fill="#08080c">
-            <rect x="40" y="52" width="160" height="36" />
-            <rect x="40" y="52" width="32" height="160" />
-            <rect x="40" y="116" width="124" height="32" />
-          </g>
-        </svg>
-        <h2 id="folio-h">Written in Folio<span class="dot">.</span></h2>
-        <p>A desktop writing desk that keeps the receipts. Mac and Linux.</p>
-        <a class="folio-link" href="https://github.com/Ad-Astra-Computing/folio">Get Folio</a>
+        <div class="cta-copy">
+          <svg class="folio-mark" viewBox="0 0 256 256" width="44" height="44" aria-hidden="true">
+            <path fill="#c9a86a" d="M 8 8 H 248 V 192 L 192 248 H 8 Z" />
+            <path stroke="#a48a52" stroke-width="4" stroke-linecap="round" d="M 192 248 L 248 192" />
+            <g fill="#08080c">
+              <rect x="40" y="52" width="160" height="36" />
+              <rect x="40" y="52" width="32" height="160" />
+              <rect x="40" y="116" width="124" height="32" />
+            </g>
+          </svg>
+          <h2 id="folio-h">Write in Folio<span class="dot">.</span></h2>
+          <p>A writing desk that keeps the receipts.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="folio-link" href="https://web.receiptsofthought.com">Open Folio Web</a>
+          <p class="folio-status">Folio for Mac and Linux: coming soon</p>
+        </div>
       </section>
     </main>
 

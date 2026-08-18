@@ -53,6 +53,9 @@ type Asset struct {
 	MIME   string `json:"mime"`
 	Title  string `json:"title,omitempty"`
 	URL    string `json:"url,omitempty"`
+
+	// Unknown members, preserved so the digest covers what was signed.
+	extras map[string]json.RawMessage
 }
 
 // GeneratorInfo describes the tool chain that produced the manifest.
@@ -60,6 +63,9 @@ type GeneratorInfo struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
 	URL     string `json:"url,omitempty"`
+
+	// Unknown members, preserved so the digest covers what was signed.
+	extras map[string]json.RawMessage
 }
 
 // Assertion is one labelled claim about the asset. Data is carried as
@@ -68,6 +74,9 @@ type GeneratorInfo struct {
 type Assertion struct {
 	Label string          `json:"label"`
 	Data  json.RawMessage `json:"data"`
+
+	// Unknown members, preserved so the digest covers what was signed.
+	extras map[string]json.RawMessage
 }
 
 // Signature is the Ed25519 envelope.
@@ -75,21 +84,32 @@ type Signature struct {
 	Alg       string `json:"alg"`
 	PublicKey string `json:"public_key"` // base64url, unpadded, raw 32-byte key
 	Value     string `json:"value"`      // base64url, unpadded, raw 64-byte signature
+
+	// Unknown members, preserved so the digest covers what was signed.
+	extras map[string]json.RawMessage
 }
 
 // SignedManifest is a manifest plus its signature.
 //
-// A SignedManifest parsed from JSON keeps the exact bytes it was parsed
-// from and re-marshals to those bytes. Signature verification covers
-// every member of the received object, including any this package does
-// not model, so a credential produced by a newer implementation still
-// verifies here rather than failing because a field was dropped on the
-// way through.
+// The signature covers every member of the received object, including
+// members this package does not model, so unknown members are preserved
+// in `extras` and re-emitted. A credential from a newer implementation
+// therefore still verifies here instead of failing because a field was
+// dropped in transit.
+//
+// What is deliberately NOT done: keeping the original bytes and
+// re-emitting those. That made a parsed credential two objects at once,
+// the bytes it arrived as and the fields a caller could edit. Verifying
+// checked the bytes while the binding checks in receipts/credential.go
+// read the fields, so a parsed credential could be mutated and still
+// verify, then marshal to something the verification never saw. One
+// authoritative object, rebuilt from current fields plus extras, cannot
+// drift from itself that way.
 type SignedManifest struct {
 	Manifest
 	Signature Signature `json:"signature"`
 
-	raw json.RawMessage
+	extras map[string]json.RawMessage
 }
 
 type signedManifestWire struct {
@@ -97,26 +117,67 @@ type signedManifestWire struct {
 	Signature Signature `json:"signature"`
 }
 
-// UnmarshalJSON decodes the modelled fields and retains the original
-// bytes.
+// modelledMembers are the top-level names signedManifestWire covers.
+// Anything else in a received credential is an unknown member.
+var modelledMembers = map[string]bool{
+	"@context":             true,
+	"type":                 true,
+	"asset":                true,
+	"claim_generator":      true,
+	"claim_generator_info": true,
+	"created_at":           true,
+	"assertions":           true,
+	"signature":            true,
+}
+
+// UnmarshalJSON decodes the modelled fields and keeps any others aside.
 func (s *SignedManifest) UnmarshalJSON(b []byte) error {
 	var w signedManifestWire
 	if err := json.Unmarshal(b, &w); err != nil {
 		return err
 	}
+	var all map[string]json.RawMessage
+	if err := json.Unmarshal(b, &all); err != nil {
+		return err
+	}
+	var extras map[string]json.RawMessage
+	for name, raw := range all {
+		if modelledMembers[name] {
+			continue
+		}
+		if extras == nil {
+			extras = make(map[string]json.RawMessage, 1)
+		}
+		extras[name] = raw
+	}
 	s.Manifest = w.Manifest
 	s.Signature = w.Signature
-	s.raw = append(json.RawMessage(nil), b...)
+	s.extras = extras
 	return nil
 }
 
-// MarshalJSON re-emits the bytes a parsed credential arrived as, and
-// otherwise encodes the modelled fields.
+// MarshalJSON encodes the current fields, then restores any unknown
+// members. Member order does not matter: the digest is taken over the
+// RFC 8785 canonical form, which sorts.
 func (s SignedManifest) MarshalJSON() ([]byte, error) {
-	if len(s.raw) > 0 {
-		return append([]byte(nil), s.raw...), nil
+	base, err := json.Marshal(signedManifestWire{Manifest: s.Manifest, Signature: s.Signature})
+	if err != nil {
+		return nil, err
 	}
-	return json.Marshal(signedManifestWire{Manifest: s.Manifest, Signature: s.Signature})
+	if len(s.extras) == 0 {
+		return base, nil
+	}
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal(base, &obj); err != nil {
+		return nil, err
+	}
+	for name, raw := range s.extras {
+		if _, taken := obj[name]; taken {
+			continue // a modelled field always wins over a stale extra
+		}
+		obj[name] = raw
+	}
+	return json.Marshal(obj)
 }
 
 // wireBytes returns the JSON form the signature is computed over.

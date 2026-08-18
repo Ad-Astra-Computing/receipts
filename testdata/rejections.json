@@ -1,0 +1,177 @@
+{
+  "_comment": [
+    "The shared rejection corpus. Every entry names a mutation of the",
+    "verifier fixture (verifier/src/testdata/sample-bundle.json) that BOTH",
+    "implementations must refuse. The Go suite and the TypeScript suite",
+    "each read this file and apply the mutations themselves.",
+    "",
+    "It exists because the interop gate only ran one way: it signed in Go",
+    "and asked TypeScript to accept. That can never catch the opposite",
+    "failure, where one implementation accepts what the other refuses, and",
+    "that is exactly the class of bug that reached this repo: offset",
+    "timestamps, padded base64, unsigned extra members. A disagreement",
+    "about what is INVALID splits verifiers just as badly as a",
+    "disagreement about what is valid.",
+    "",
+    "path is dot-separated; numeric segments index arrays. Use set to",
+    "replace a value, or delete: true to remove the member."
+  ],
+  "cases": [
+    {
+      "name": "checkpoint timestamp with a zone offset",
+      "why": "SPEC 4: hashed timestamps are UTC with a Z designator",
+      "path": "timeline.checkpoints.0.at",
+      "set": "2026-07-18T14:12:00+05:00"
+    },
+    {
+      "name": "checkpoint timestamp with fractional seconds",
+      "why": "SPEC 4: whole seconds only",
+      "path": "timeline.checkpoints.0.at",
+      "set": "2026-07-18T09:12:00.500Z"
+    },
+    {
+      "name": "generated with a zero offset instead of Z",
+      "why": "SPEC 4: +00:00 and Z are different strings and the digest hashes the string",
+      "path": "generated",
+      "set": "2026-07-20T14:50:51+00:00"
+    },
+    {
+      "name": "ai range timestamp with an offset",
+      "why": "SPEC 4: when is signed and must be canonical",
+      "path": "ai_ranges.0.when",
+      "set": "2026-07-20T16:50:51+02:00"
+    },
+    {
+      "name": "credential created_at with an offset",
+      "why": "SPEC 4: the credential timestamp is canonical too",
+      "path": "credential.created_at",
+      "set": "2026-07-20T16:50:51+02:00"
+    },
+    {
+      "name": "signature padded with =",
+      "why": "SPEC 3: unpadded base64url, and padding decodes to the same bytes",
+      "path": "signature.value",
+      "set": "PADDED"
+    },
+    {
+      "name": "unsigned member at the top level",
+      "why": "the signing digest covers a fixed field list, so this rides along unsigned",
+      "path": "surprise",
+      "set": 1
+    },
+    {
+      "name": "unsigned member inside a checkpoint",
+      "why": "same, one level down",
+      "path": "timeline.checkpoints.0.surprise",
+      "set": 1
+    },
+    {
+      "name": "credential context replaced",
+      "why": "SPEC 7: a signed object is not a content credential unless it says it is",
+      "path": "credential.@context",
+      "set": "https://example.com/not-c2pa"
+    },
+    {
+      "name": "credential asset hash uppercased",
+      "why": "SPEC 4: hashes are lowercase hex, and two spellings would compare unequal",
+      "path": "credential.asset.sha256",
+      "set": "5255BC2D12FFEF3B1A83C2D9BE60839F27D26D576862111D788F8258789F8D1B"
+    },
+    {
+      "name": "credential assertions removed",
+      "why": "SPEC 7: assertions is required, even when empty",
+      "path": "credential.assertions",
+      "delete": true
+    },
+    {
+      "name": "timeline removed entirely",
+      "why": "a document with no timeline is not a receipt",
+      "path": "timeline",
+      "delete": true
+    },
+    {
+      "name": "checkpoints is not an array",
+      "why": "hostile input must fail as a check, never as an exception",
+      "path": "timeline.checkpoints",
+      "set": 3
+    },
+    {
+      "name": "post body hash changed",
+      "why": "the signature covers it",
+      "path": "post.sha256",
+      "set": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "checkpoints missing entirely",
+      "why": "a receipt with no record of composition is not a receipt; the empty chain hashes to the empty string, which once passed",
+      "path": "timeline.checkpoints",
+      "delete": true
+    },
+    {
+      "name": "words is a string",
+      "why": "SPEC 3: counts are integers, and a typed decoder refuses a string",
+      "path": "timeline.checkpoints.0.words",
+      "set": "forty"
+    },
+    {
+      "name": "words is fractional",
+      "why": "SPEC 3: counts are integers",
+      "path": "timeline.checkpoints.0.words",
+      "set": 1.5
+    },
+    {
+      "name": "chars is negative",
+      "why": "SPEC 3: counts are non-negative",
+      "path": "timeline.checkpoints.0.chars",
+      "set": -1
+    },
+    {
+      "name": "post.title is a number",
+      "why": "SPEC 3: title is a string, and it is hashed as one",
+      "path": "post.title",
+      "set": 42
+    },
+    {
+      "name": "post.sha256 is null",
+      "why": "SPEC 3: the body hash is required",
+      "path": "post.sha256",
+      "set": null
+    },
+    {
+      "name": "ai range ends before it starts",
+      "why": "SPEC 3: a range is half-open and non-empty",
+      "path": "ai_ranges.0.to",
+      "set": 1
+    },
+    {
+      "name": "ai range offset is negative",
+      "why": "SPEC 3: offsets are non-negative",
+      "path": "ai_ranges.0.from",
+      "set": -5
+    },
+    {
+      "name": "ai range when is empty",
+      "why": "an empty string is not a timestamp",
+      "path": "ai_ranges.0.when",
+      "set": ""
+    },
+    {
+      "name": "claim excerpt is a boolean",
+      "why": "SPEC 3: excerpt is a string",
+      "path": "claims.0.excerpt",
+      "set": true
+    },
+    {
+      "name": "signature alg is missing",
+      "why": "SPEC 3: alg is required and only Ed25519 is defined",
+      "path": "signature.alg",
+      "delete": true
+    },
+    {
+      "name": "chain_hash missing",
+      "why": "SPEC 5: the chain value is what makes the timeline tamper-evident",
+      "path": "timeline.chain_hash",
+      "delete": true
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { verifyBundle, type Bundle } from "./verify";
+import { verifyBundle, SCHEMA, type Bundle } from "./verify";
 
 const load = () => JSON.parse(
   readFileSync(fileURLToPath(new URL("./sample.receipts.json", import.meta.url)), "utf8")
@@ -154,4 +154,40 @@ describe("adversarial: the verifier must REJECT tampering", () => {
     expect(passed(r)).toBe(true);
     expect(credCheck(r)?.ok).toBe(true);
   });
+});
+
+// The verifier is a public page that opens files from strangers. Every
+// one of these is a plausible thing to drop on it, by accident or on
+// purpose, and none of them may throw: an exception escaping verifyBundle
+// is an unhandled rejection and a page that looks broken rather than a
+// receipt that failed.
+describe("hostile and malformed input", () => {
+  const cases: Record<string, unknown> = {
+    "null": null,
+    "a number": 42,
+    "a string": "receipt",
+    "an array": [],
+    "an empty object": {},
+    "timeline missing": { schema: SCHEMA, signature: {} },
+    "timeline null": { schema: SCHEMA, timeline: null },
+    "timeline a string": { schema: SCHEMA, timeline: "nope" },
+    "checkpoints not an array": { schema: SCHEMA, timeline: { checkpoints: 3, chain_hash: "x" } },
+    "checkpoints containing null": { schema: SCHEMA, timeline: { checkpoints: [null], chain_hash: "x" } },
+    "ai_ranges not an array": { schema: SCHEMA, timeline: { checkpoints: [] }, ai_ranges: 7 },
+    "ai_ranges containing null": { schema: SCHEMA, timeline: { checkpoints: [] }, ai_ranges: [null] },
+    "claims not an array": { schema: SCHEMA, timeline: { checkpoints: [] }, claims: "x" },
+    "signature missing": { schema: SCHEMA, timeline: { checkpoints: [] } },
+    "signature a string": { schema: SCHEMA, timeline: { checkpoints: [] }, signature: "sig" },
+    "credential null": { schema: SCHEMA, timeline: { checkpoints: [] }, credential: null },
+    "post null": { schema: SCHEMA, timeline: { checkpoints: [] }, post: null },
+  };
+
+  for (const [name, input] of Object.entries(cases)) {
+    it(`fails without throwing: ${name}`, async () => {
+      const res = await verifyBundle(input as never);
+      expect(res.ok).toBe(false);
+      expect(Array.isArray(res.checks)).toBe(true);
+      expect(res.checks.some((c) => !c.ok)).toBe(true);
+    });
+  }
 });

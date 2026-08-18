@@ -1,8 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// Package receipts_test holds the cross-language interop gate: a
-// bundle signed here must verify in the reference TypeScript verifier,
-// and a bundle the verifier accepts must verify here.
+// Package receipts_test holds the cross-language interop gate, which has
+// two halves because agreement has two halves.
+//
+// Agreement on what is VALID: a bundle signed here must verify in the
+// reference TypeScript verifier (TestGoSignedBundleVerifiesInTypeScript).
+//
+// Agreement on what is INVALID: both implementations must refuse every
+// case in testdata/rejections.json (corpus_test.go here, corpus.test.ts
+// there). This half is the one that was missing, and its absence is why
+// offset timestamps, padded base64 and unsigned extra members could be
+// accepted by one side and refused by the other without any gate
+// noticing.
 package receipts_test
 
 import (

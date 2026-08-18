@@ -241,7 +241,7 @@ mark.ai {
 
 /* Content sections */
 section { padding: var(--s5) 0; border-top: 1px solid var(--hairline); }
-/* Alternating full-bleed bands for editorial rhythm (Codex). The
+/* Alternating full-bleed bands for editorial rhythm. The
    box-shadow spread paints the band edge-to-edge; clip-path stops it
    bleeding vertically. No DOM wrapper needed. */
 .band {
@@ -252,6 +252,9 @@ section { padding: var(--s5) 0; border-top: 1px solid var(--hairline); }
 }
 section h2 { font-size: var(--fs-1); margin: 0 0 var(--s2); }
 section p { max-width: var(--measure); color: var(--bone-1); margin: 0 0 var(--s1); }
+/* A paragraph that follows the proves/anatomy bullet lists needs air above
+   it so it reads as a closing note, not a fourth bullet. */
+.anatomy + p { margin-top: var(--s3); }
 #thesis p { color: var(--bone-0); }
 
 .anatomy { display: grid; gap: var(--s2); margin: 0; }
@@ -273,7 +276,31 @@ section p { max-width: var(--measure); color: var(--bone-1); margin: 0 0 var(--s
 .ledger th { color: var(--bone-2); font-weight: 500; font-family: var(--font-mono); font-size: var(--fs--2); text-transform: uppercase; letter-spacing: 0.06em; }
 .ledger td:last-child { font-family: var(--font-mono); color: var(--bone-2); }
 
-.cta { text-align: left; }
+/* Folio region: words lead, the action sits beside them. Stacked on a
+   phone, split on the golden ratio at the desktop breakpoint. */
+.cta {
+  display: grid;
+  gap: var(--s3);
+  padding-top: var(--s3);
+  padding-bottom: var(--s3);
+  text-align: left;
+  align-items: center;
+}
+.cta-copy > h2 { margin: 0; }
+.cta-copy > .folio-mark { margin: 0 0 var(--s1); }
+.cta-copy > p { margin: var(--s1) 0 0; color: var(--bone-1); max-width: 38ch; }
+.cta-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s1);
+}
+.folio-status {
+  margin: 0;
+  color: var(--bone-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs--1);
+}
 .folio-link {
   display: inline-block; margin-top: var(--s1);
   padding: var(--s0) var(--s2); border: 1px solid var(--bone-1);
@@ -291,7 +318,16 @@ footer .fine { font-size: var(--fs--2); }
 
 /* Responsive: phi breakpoints 38.2em / 61.8em */
 @media (min-width: 61.8em) {
-  #hero { grid-template-columns: 38.2fr 61.8fr; }
+  #hero { grid-template-columns: minmax(0, 38.2fr) minmax(0, 61.8fr); }
+  /* Statement gets the minor share, the working surface the major one.
+     The Folio region inverts it: words lead, the action sits right. */
+  .cta {
+    grid-template-columns: minmax(0, 61.8fr) minmax(0, 38.2fr);
+    column-gap: var(--s4);
+    align-items: center;
+    text-align: left;
+  }
+  .cta-actions { align-items: flex-end; text-align: right; }
   #hero-h { font-size: var(--fs-3); }
   #anatomy { }
   .anatomy { grid-template-columns: 1fr 1fr; gap: var(--s3) var(--s4); }
@@ -314,5 +350,63 @@ footer .fine { font-size: var(--fs--2); }
    wears, shown before download so the association is made on the page. */
 .cta .folio-mark {
   display: block;
-  margin: 0 auto var(--sp-3, 12px);
+  margin: 0 0 var(--s1);
 }
+
+/* The verifier: the card and the line telling you what to do with it are
+   one region, so the grid cannot separate them. */
+.verifier {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s1);
+  width: 100%;
+}
+
+/* A signifier above the card. cursor:pointer only reaches mouse users,
+   and the card renders a finished receipt, which reads as output rather
+   than as somewhere to put a file. */
+.drop-lede {
+  margin: 0;
+  color: var(--bone-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs--1);
+  letter-spacing: 0.02em;
+}
+
+/* Which receipt is on screen: ours, until you drop yours. */
+.demo-badge {
+  position: absolute;
+  top: var(--s1);
+  right: var(--s1);
+  z-index: 2;
+  padding: 2px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: var(--paper-2);
+  color: var(--bone-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs--2);
+  letter-spacing: 0.04em;
+}
+.receipt.has-file .demo-badge { display: none; }
+
+/* Two corner marks do not say what a drop will do. */
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: none;
+  place-items: center;
+  background: color-mix(in srgb, var(--paper-0) 82%, transparent);
+  color: var(--paper-ink);
+  font-family: var(--font-mono);
+  font-size: var(--fs-0);
+  letter-spacing: 0.04em;
+}
+.receipt.over .drop-overlay { display: grid; }
+
+/* Verification is fast, but not instant on a large bundle, and the old
+   verdict staying put reads as "nothing happened". */
+.receipt-inner[aria-busy="true"] { opacity: 0.55; }
+

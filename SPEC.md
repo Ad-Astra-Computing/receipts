@@ -4,9 +4,18 @@ Version 1 (`folio.receipts/1`)
 
 This document specifies the receipts bundle: a portable, signed record
 of how a piece of writing was made. It is written so that anyone can
-implement a producer or a verifier from this text alone. The reference
-verifier ([`verifier/src/verify.ts`](verifier/src/verify.ts)) is
-normative where this prose is ambiguous.
+implement a producer or a verifier from this text alone.
+
+This document is normative. The implementations in this repository, the
+Go module and the TypeScript verifier, are references: where one of them
+disagrees with this text, the implementation is wrong. Naming the code as
+the tie-breaker, as an earlier version of this document did, made the
+specification circular and left an independent implementer reading
+TypeScript to learn the format.
+
+Where this text is genuinely silent, that is a defect in it. Please
+report it rather than reading the code, so the answer lands here and
+every implementation gets it.
 
 ## 1. What a bundle asserts
 
@@ -16,7 +25,7 @@ signs them as a unit:
 1. A reference to the published body: its title, its canonical URL and
    the SHA-256 of its bytes.
 2. A C2PA-aligned content credential, itself signed, binding the same
-   author identity to the same body.
+   signing key to the same body.
 3. The AI-authored spans the author chose to disclose, as character
    ranges with an optional model name and timestamp.
 4. The factual claims the author sourced, as an excerpt, a source URL
@@ -87,12 +96,187 @@ The signing digest hashes the rendered timestamp (section 6), so a
 bundle whose wire timestamp differs from the string that was signed
 verifies in one implementation and fails in another.
 
+### 3.1 Members, types and requiredness
+
+The tables below are normative. "Integer" means a JSON number that is
+integral and within the safe range of section 4. A verifier MUST reject a
+member whose JSON type differs from the one given, rather than coercing
+it: a language whose strings interpolate numbers and a language with a
+typed decoder will otherwise disagree about the same document.
+
+A bundle MUST contain no members other than those listed. Unknown members
+are refused rather than ignored, because the signing digest of section 6
+covers a fixed list, so anything else would be carried unsigned while the
+receipt reports that nothing was altered. Extension belongs to a new
+schema string, not to unsigned members of this one.
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `schema` | string | yes | Exactly `folio.receipts/1`. |
+| `generated` | string | yes | Canonical timestamp (section 4). |
+| `post` | object | yes | See below. |
+| `credential` | object | yes | See section 7. |
+| `ai_ranges` | array or null | no | Absent or `null` means empty. |
+| `claims` | array or null | no | Absent or `null` means empty. |
+| `timeline` | object | yes | See below. A receipt whose subject is the composition record MUST carry one, even when empty. |
+| `signature` | object | yes | See below. |
+
+`post`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `title` | string | no | Not otherwise constrained. |
+| `url` | string | no | Not otherwise constrained. Verification establishes neither validity nor reachability. |
+| `sha256` | string | yes | 64 lowercase hex characters: SHA-256 of the published body's UTF-8 bytes. |
+
+`timeline`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `checkpoints` | array | yes | MAY be empty. Each element is an object. |
+| `chain_hash` | string | yes | The chain value of section 5. For an empty `checkpoints` this is the empty string. |
+
+`timeline.checkpoints[]`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `at` | string | yes | Canonical timestamp. Checkpoints SHOULD be in non-decreasing time order; a verifier does not enforce this, and MUST NOT present chain validity as evidence of it. |
+| `words` | integer | yes | Non-negative. Section 3.2. |
+| `chars` | integer | yes | Non-negative. Section 3.2. |
+| `hash` | string | yes | 64 lowercase hex characters. Section 3.2. |
+
+`ai_ranges[]`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `from` | integer | yes | Non-negative UTF-8 byte offset into the published body. |
+| `to` | integer | yes | Non-negative, and strictly greater than `from`. The range is half-open: `[from, to)`. |
+| `model` | string | no | Free text. No registry of model names is defined, and a verifier MUST NOT treat this as attested. |
+| `when` | string | no | If present, a canonical timestamp. The empty string is not a timestamp and MUST be rejected. |
+
+A verifier MUST reject a negative, inverted or empty range. It cannot
+check a range against the body when no body was supplied, so a bundle
+whose ranges exceed the body length is rejected only when the body is
+present (section 8).
+
+`claims[]`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `excerpt` | string | yes | The sentence being sourced. |
+| `source_url` | string | yes | Not otherwise constrained. A receipt records that the author cited this source, and nothing about whether the source supports the claim. |
+| `status` | string | no | Free text. This version defines no enumeration and a verifier MUST NOT infer one. |
+
+`signature`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `alg` | string | yes | Exactly `Ed25519`. This version defines no other algorithm. |
+| `public_key` | string | yes | Canonical unpadded base64url of the raw 32-byte key (section 4). |
+| `value` | string | yes | Canonical unpadded base64url of the raw 64-byte signature. |
+
+### 3.2 Checkpoint counts and hash
+
+A checkpoint describes one saved state of the draft. All three derived
+values are computed from the draft text at that moment, and a third-party
+producer MUST compute them the same way or its chain will not reproduce.
+
+- `hash` is the SHA-256 of the draft text's UTF-8 bytes at that
+  checkpoint, lowercase hex. The draft text itself never appears in the
+  bundle; this is the only trace of it, and it is one-way.
+- `chars` counts Unicode code points, not bytes and not grapheme
+  clusters.
+- `words` counts maximal non-empty runs of code points separated by any
+  of exactly six characters: space (U+0020), tab (U+0009), line feed
+  (U+000A), carriage return (U+000D), form feed (U+000C) and vertical tab
+  (U+000B). No other character separates words, so punctuation attaches
+  to the word it touches and a hyphenated compound counts as one.
+
+  The list is deliberately closed and ASCII. "Unicode whitespace" would
+  make the count depend on which version of which table an implementation
+  consulted, and this number is hashed into the chain, so two producers
+  that disagreed by one word would produce receipts that do not verify
+  against each other. The cost is that a no-break space (U+00A0) or an
+  ideographic space (U+3000) does not separate words, which undercounts
+  text that uses them. That is a known limitation of this version, kept
+  because an exactly reproducible count matters more here than a
+  linguistically ideal one.
+
+Because `hash` is over text a verifier never sees, it proves nothing on
+its own. Its role is to bind each checkpoint into the chain of section 5,
+so that a checkpoint cannot be altered, reordered or removed after
+signing without detection.
+
+### 3.3 Duplicate member names
+
+A conforming producer MUST NOT emit an object with a duplicated member
+name. Behaviour on receiving one is not defined by this version: JSON
+parsers differ, typically taking either the first or the last, and two
+verifiers may therefore disagree about such a document. A verifier
+SHOULD reject a duplicate rather than choose.
+
+## 3a. The transport envelope
+
+A bundle is the root object of a `.receipts.json` file. That file alone
+is enough to verify everything except one thing: whether the published
+body still matches `post.sha256`. To check that, a verifier needs the
+body, and a reader who was handed only a receipt does not have it.
+
+So a producer MAY wrap a bundle for transport:
+
+```json
+{ "bundle": { ...the bundle... }, "body": "the published text" }
+```
+
+Rules:
+
+- The envelope is NOT a bundle and is never signed. Nothing about it is
+  covered by `signature`. Its only purpose is to carry a body alongside
+  the receipt that describes it.
+- A verifier MUST accept both forms: a bare bundle, and an envelope. When
+  it sees an envelope it MUST verify `bundle` exactly as it would a bare
+  one, and additionally check `body` against `post.sha256`.
+- A verifier MUST NOT treat a missing body as a passed body check. It
+  MUST distinguish "the text matches" from "no text was supplied", and
+  say which to the reader, because those are different assurances.
+- `body` is the published text as bytes, decoded as UTF-8.
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `bundle` | object | yes | A bundle, per section 3. |
+| `body` | string | no | The published text. Absent means no text was supplied, which is not the same as a text that matched. |
+
+An envelope MUST contain no other members. A verifier distinguishes the
+two forms by the presence of `bundle`: a document with a `bundle` member
+is an envelope, and any other object is read as a bare bundle. A bundle
+has no member named `bundle`, so the test is unambiguous.
+
+The envelope is a convenience for demonstration and for readers who
+receive a receipt on its own. A published receipt beside a published post
+does not need it: the reader has the post.
+
 ## 4. Encodings
 
 - Hashes are lowercase hexadecimal.
 - The public key and signature are base64url without padding
   (RFC 4648 §5, no trailing `=`).
 - All strings are UTF-8. The signing input is built from UTF-8 bytes.
+- Every integer in a bundle MUST lie in the closed range
+  `[-(2^53 - 1), 2^53 - 1]`, the largest range every JSON implementation
+  reproduces exactly. A producer MUST NOT emit an integer outside it, and
+  a verifier MUST reject one, because a number a language rounds is a
+  number two verifiers will hash differently.
+- `ai_ranges[].from` and `.to` are UTF-8 **byte** offsets into the
+  published body, half-open: `[from, to)`. Bytes, not characters and not
+  UTF-16 code units, because a byte offset is the one position every
+  language agrees on without a conversion table. A producer or verifier
+  working in a language whose strings are not byte-indexed MUST convert.
+  Getting this wrong is silent: the offsets still land somewhere, and
+  they only diverge once the text contains a character outside ASCII.
+- `timeline.checkpoints[].chars` counts Unicode **code points**, not
+  bytes and not grapheme clusters. It is a size the author sees, so it
+  counts characters; `ai_ranges` are positions a machine resolves, so
+  they count bytes.
 
 ## 5. The timeline chain
 
@@ -194,10 +378,48 @@ personal publishers have no certificate authority, while a self-anchored
 public key fingerprint is verifiable by any reader with nothing but a
 SHA-256 and an Ed25519 primitive.
 
-The two signatures share one author identity. The same Ed25519 key that
+The two signatures share one key. The same Ed25519 key that
 signs the outer bundle signs the embedded credential, so a verifier
 that trusts the author's key trusts both at once, and a reader sees a
 single fingerprint.
+
+### 7.0 The credential object
+
+A credential MUST have the shape below. A signature establishes that this
+object was signed by the key it names; it does not establish that the
+object is a content credential. Without a required shape, a signed pair
+of fields carrying an asset hash and a signature satisfies every
+cryptographic check, and a verifier that then calls it a valid content
+credential has claimed more than it tested.
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `@context` | string | yes | Exactly `https://c2pa.org/ns/manifest/1.4`. |
+| `type` | string | yes | Exactly `ContentCredential`. |
+| `asset` | object | yes | See below. |
+| `claim_generator` | string | yes | Non-empty. Conventionally `Name/Version`. |
+| `claim_generator_info` | object | yes | `name` is required and non-empty; `version` and `url` are optional strings. |
+| `created_at` | string | yes | Canonical timestamp (section 4). |
+| `assertions` | array | yes | MAY be empty. Each element is an object with a `label` string and a `data` value. |
+| `signature` | object | yes | `alg`, `public_key`, `value`, as in section 3.1. |
+
+`credential.asset`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `sha256` | string | yes | 64 lowercase hex characters, and MUST equal `post.sha256`. |
+| `size` | integer | yes | Non-negative: the published body's length in bytes. |
+| `mime` | string | yes | Non-empty. |
+| `title` | string | no | |
+| `url` | string | no | |
+
+Unlike the bundle, the credential MAY carry members this specification
+does not define, at any depth. Its own signature is computed over the
+whole object (section 7.1), so an unknown member there is signed rather
+than smuggled. A verifier MUST preserve every member it does not
+recognise when computing the digest: dropping one means hashing a
+smaller object than the one that was signed, and two verifiers that drop
+different members will disagree about a credential both should accept.
 
 ### 7.1 Signing the credential
 
@@ -260,7 +482,7 @@ A conforming verifier MUST, in order:
    b. Check the credential's bindings to the outer bundle:
       `credential.asset.sha256` MUST equal `post.sha256`, and
       `credential.signature.public_key` MUST equal
-      `signature.public_key` (one author identity signs both). Where the
+      `signature.public_key` (one key signs both). Where the
       credential declares an asset `size` or `mime` and the outer bundle
       carries the same field, they MUST agree; where the outer bundle has
       no such field, the verifier makes no comparison and invents no
@@ -281,7 +503,10 @@ checks. Every input it needs is in the bundle and, optionally, the body.
 A valid bundle proves that the described process, credential and body
 have not been altered since they were signed by the named key, and that
 they are consistent with one another. That is a claim about tamper
-evidence and about one author identity.
+evidence and about the continuity of one embedded key. It is not a claim
+about who holds that key: this format defines no mechanism binding a key
+to a person, and a verifier that reports one is reporting something this
+specification does not establish.
 
 It does not prove that a human, rather than an automated pipeline, sat
 at the keyboard. No signing tool can prove intent. The value of the

@@ -70,3 +70,35 @@ func TestWordCount(t *testing.T) {
 		}
 	}
 }
+
+// SPEC section 3.2 fixes the word separators as exactly six ASCII
+// characters, because this count is hashed into the timeline chain and
+// "Unicode whitespace" would make it depend on which table version an
+// implementation consulted. These cases pin that decision, including the
+// limitation it accepts.
+func TestWordCountSeparatorsAreExactlyTheSpecifiedSix(t *testing.T) {
+	for name, tc := range map[string]struct {
+		in   string
+		want int
+	}{
+		"spaces":                  {"one two three", 3},
+		"tab":                     {"one\ttwo", 2},
+		"newline":                 {"one\ntwo", 2},
+		"carriage return":         {"one\rtwo", 2},
+		"form feed":               {"one\ftwo", 2},
+		"vertical tab":            {"one\vtwo", 2},
+		"runs collapse":           {"one   \n\t two", 2},
+		"leading and trailing":    {"  one  ", 1},
+		"empty":                   {"", 0},
+		"punctuation attaches":    {"hello, world!", 2},
+		"hyphenated is one":       {"well-known", 1},
+		"no-break space does not": {"one two", 1},
+		"ideographic space not":   {"one　two", 1},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got := WordCount(tc.in); got != tc.want {
+				t.Fatalf("WordCount(%q) = %d, want %d", tc.in, got, tc.want)
+			}
+		})
+	}
+}

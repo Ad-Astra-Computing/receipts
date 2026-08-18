@@ -15,9 +15,14 @@ const reduceMotion = () =>
 // the hero's async verify landing after a user has dropped a file).
 let renderSeq = 0;
 
-async function show(bundle: Bundle, body: string | undefined, animate: boolean) {
+async function show(bundle: Bundle, body: string | undefined, animate: boolean, label?: string) {
   const seq = ++renderSeq;
+  if (label) {
+    inner().setAttribute("aria-busy", "true");
+    inner().textContent = `Checking ${label}…`;
+  }
   const res = await verifyBundle(bundle, body);
+  inner().setAttribute("aria-busy", "false");
   if (seq !== renderSeq) return; // a newer render superseded this one
   const c = card();
   c.classList.remove("animate");
@@ -31,25 +36,44 @@ async function show(bundle: Bundle, body: string | undefined, animate: boolean) 
 
 function extract(data: unknown): { bundle: Bundle; body?: string } {
   const d = data as { bundle?: Bundle; body?: string } & Bundle;
-  return { bundle: (d.bundle ?? d) as Bundle, body: d.body };
+  // A transport envelope carries the published text (SPEC 3a). Anything
+  // other than a string is not that, and passing it on would hash
+  // whatever it happens to stringify as.
+  const body = typeof d?.body === "string" ? d.body : undefined;
+  return { bundle: (d?.bundle ?? d) as Bundle, body };
 }
 
 async function loadFile(f: File) {
+  card().classList.add("has-file");
   try {
     const { bundle, body } = extract(JSON.parse(await f.text()));
-    await show(bundle, body, true);
+    await show(bundle, body, true, f.name);
     card().scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
-  } catch (e) {
-    inner().textContent = `Could not read that file: ${String(e)}`;
+  } catch {
+    // The exception text names a byte offset in a file the reader cannot
+    // see. What they need is what to do next.
+    inner().setAttribute("aria-busy", "false");
+    inner().textContent =
+      `${f.name} is not a receipt this page can read. A receipt is a .receipts.json file, published beside the writing it describes.`;
   }
+}
+
+/** Loads exactly one file, and says so when several arrive. */
+function loadOne(files: FileList | null | undefined) {
+  const list = files ? Array.from(files) : [];
+  if (list.length === 0) return;
+  if (list.length > 1) {
+    card().classList.add("has-file");
+    inner().setAttribute("aria-busy", "false");
+    inner().textContent = `Drop one receipt at a time. ${list.length} files arrived together.`;
+    return;
+  }
+  void loadFile(list[0]);
 }
 
 function wire() {
   const input = document.getElementById("file") as HTMLInputElement | null;
-  input?.addEventListener("change", () => {
-    const f = input.files?.[0];
-    if (f) void loadFile(f);
-  });
+  input?.addEventListener("change", () => loadOne(input.files));
 
   // Whole-window drag target so a drop anywhere works.
   let dragDepth = 0;
@@ -67,8 +91,7 @@ function wire() {
     e.preventDefault();
     dragDepth = 0;
     card().classList.remove("over");
-    const f = e.dataTransfer?.files?.[0];
-    if (f) void loadFile(f);
+    loadOne(e.dataTransfer?.files);
   });
 }
 

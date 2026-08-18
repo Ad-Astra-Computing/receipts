@@ -24,11 +24,13 @@ func TestSignNormalizesCreatedAt(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			signed, err := Sign(Manifest{
-				Context:    ContextURI,
-				Type:       ManifestType,
-				Asset:      Asset{SHA256: "aa", Size: 1, MIME: "text/markdown"},
-				CreatedAt:  in,
-				Assertions: []Assertion{},
+				Context:        ContextURI,
+				Type:           ManifestType,
+				Asset:          Asset{SHA256: strings.Repeat("a", 64), Size: 1, MIME: "text/markdown"},
+				ClaimGenerator: "Test/1",
+				GeneratorInfo:  GeneratorInfo{Name: "Test", Version: "1"},
+				CreatedAt:      in,
+				Assertions:     []Assertion{},
 			}, key)
 			if err != nil {
 				t.Fatalf("sign: %v", err)
@@ -58,7 +60,7 @@ func TestSignNormalizesCreatedAt(t *testing.T) {
 func TestVerifyRejectsNonWholeSecondCreatedAt(t *testing.T) {
 	key := testKey(t)
 	base, err := Build(BuildInput{
-		Asset:     Asset{SHA256: "aa", Size: 1, MIME: "text/markdown"},
+		Asset:     Asset{SHA256: strings.Repeat("a", 64), Size: 1, MIME: "text/markdown"},
 		Generator: GeneratorInfo{Name: "Folio", Version: "0.1.0"},
 		CreatedAt: time.Date(2026, 7, 20, 14, 50, 51, 0, time.UTC),
 	})
