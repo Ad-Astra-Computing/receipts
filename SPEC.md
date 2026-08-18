@@ -87,6 +87,125 @@ The signing digest hashes the rendered timestamp (section 6), so a
 bundle whose wire timestamp differs from the string that was signed
 verifies in one implementation and fails in another.
 
+### 3.1 Members, types and requiredness
+
+The tables below are normative. "Integer" means a JSON number that is
+integral and within the safe range of section 4. A verifier MUST reject a
+member whose JSON type differs from the one given, rather than coercing
+it: a language whose strings interpolate numbers and a language with a
+typed decoder will otherwise disagree about the same document.
+
+A bundle MUST contain no members other than those listed. Unknown members
+are refused rather than ignored, because the signing digest of section 6
+covers a fixed list, so anything else would be carried unsigned while the
+receipt reports that nothing was altered. Extension belongs to a new
+schema string, not to unsigned members of this one.
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `schema` | string | yes | Exactly `folio.receipts/1`. |
+| `generated` | string | yes | Canonical timestamp (section 4). |
+| `post` | object | yes | See below. |
+| `credential` | object | yes | See section 7. |
+| `ai_ranges` | array or null | no | Absent or `null` means empty. |
+| `claims` | array or null | no | Absent or `null` means empty. |
+| `timeline` | object | yes | See below. A receipt whose subject is the composition record MUST carry one, even when empty. |
+| `signature` | object | yes | See below. |
+
+`post`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `title` | string | no | Not otherwise constrained. |
+| `url` | string | no | Not otherwise constrained. Verification establishes neither validity nor reachability. |
+| `sha256` | string | yes | 64 lowercase hex characters: SHA-256 of the published body's UTF-8 bytes. |
+
+`timeline`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `checkpoints` | array | yes | MAY be empty. Each element is an object. |
+| `chain_hash` | string | yes | The chain value of section 5. For an empty `checkpoints` this is the empty string. |
+
+`timeline.checkpoints[]`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `at` | string | yes | Canonical timestamp. Checkpoints SHOULD be in non-decreasing time order; a verifier does not enforce this, and MUST NOT present chain validity as evidence of it. |
+| `words` | integer | yes | Non-negative. Section 3.2. |
+| `chars` | integer | yes | Non-negative. Section 3.2. |
+| `hash` | string | yes | 64 lowercase hex characters. Section 3.2. |
+
+`ai_ranges[]`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `from` | integer | yes | Non-negative UTF-8 byte offset into the published body. |
+| `to` | integer | yes | Non-negative, and strictly greater than `from`. The range is half-open: `[from, to)`. |
+| `model` | string | no | Free text. No registry of model names is defined, and a verifier MUST NOT treat this as attested. |
+| `when` | string | no | If present, a canonical timestamp. The empty string is not a timestamp and MUST be rejected. |
+
+A verifier MUST reject a negative, inverted or empty range. It cannot
+check a range against the body when no body was supplied, so a bundle
+whose ranges exceed the body length is rejected only when the body is
+present (section 8).
+
+`claims[]`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `excerpt` | string | yes | The sentence being sourced. |
+| `source_url` | string | yes | Not otherwise constrained. A receipt records that the author cited this source, and nothing about whether the source supports the claim. |
+| `status` | string | no | Free text. This version defines no enumeration and a verifier MUST NOT infer one. |
+
+`signature`:
+
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `alg` | string | yes | Exactly `Ed25519`. This version defines no other algorithm. |
+| `public_key` | string | yes | Canonical unpadded base64url of the raw 32-byte key (section 4). |
+| `value` | string | yes | Canonical unpadded base64url of the raw 64-byte signature. |
+
+### 3.2 Checkpoint counts and hash
+
+A checkpoint describes one saved state of the draft. All three derived
+values are computed from the draft text at that moment, and a third-party
+producer MUST compute them the same way or its chain will not reproduce.
+
+- `hash` is the SHA-256 of the draft text's UTF-8 bytes at that
+  checkpoint, lowercase hex. The draft text itself never appears in the
+  bundle; this is the only trace of it, and it is one-way.
+- `chars` counts Unicode code points, not bytes and not grapheme
+  clusters.
+- `words` counts maximal non-empty runs of code points separated by any
+  of exactly six characters: space (U+0020), tab (U+0009), line feed
+  (U+000A), carriage return (U+000D), form feed (U+000C) and vertical tab
+  (U+000B). No other character separates words, so punctuation attaches
+  to the word it touches and a hyphenated compound counts as one.
+
+  The list is deliberately closed and ASCII. "Unicode whitespace" would
+  make the count depend on which version of which table an implementation
+  consulted, and this number is hashed into the chain, so two producers
+  that disagreed by one word would produce receipts that do not verify
+  against each other. The cost is that a no-break space (U+00A0) or an
+  ideographic space (U+3000) does not separate words, which undercounts
+  text that uses them. That is a known limitation of this version, kept
+  because an exactly reproducible count matters more here than a
+  linguistically ideal one.
+
+Because `hash` is over text a verifier never sees, it proves nothing on
+its own. Its role is to bind each checkpoint into the chain of section 5,
+so that a checkpoint cannot be altered, reordered or removed after
+signing without detection.
+
+### 3.3 Duplicate member names
+
+A conforming producer MUST NOT emit an object with a duplicated member
+name. Behaviour on receiving one is not defined by this version: JSON
+parsers differ, typically taking either the first or the last, and two
+verifiers may therefore disagree about such a document. A verifier
+SHOULD reject a duplicate rather than choose.
+
 ## 3a. The transport envelope
 
 A bundle is the root object of a `.receipts.json` file. That file alone
