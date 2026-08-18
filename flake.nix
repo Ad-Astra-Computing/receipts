@@ -20,7 +20,9 @@
           # read it, so a derivation scoped to verifier/ would run the
           # verifier's tests with that gate quietly absent.
           src = ./.;
-          sourceRoot = "source/verifier";
+          # Descend after unpacking rather than naming a source root: the
+          # unpacked directory is named after the store path, not "source".
+          postUnpack = "sourceRoot=$sourceRoot/verifier";
           # Update with:
           #   nix run nixpkgs#prefetch-npm-deps -- verifier/package-lock.json
           npmDepsHash = "sha256-mBtJ3tu37qn7iPySNp6Aor6fdq4C4ou4eSvqtOq91g4=";
