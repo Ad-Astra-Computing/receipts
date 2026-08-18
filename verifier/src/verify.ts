@@ -286,6 +286,26 @@ function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
+// The members schema 1 defines, per SPEC section 3. A producer that adds
+// anything else is adding content the signature does not cover, which Go
+// refuses at parse, so this side refuses it too.
+const MEMBERS: Record<string, readonly string[]> = {
+  "": ["schema", "generated", "post", "credential", "ai_ranges", "claims", "timeline", "signature"],
+  post: ["title", "url", "sha256"],
+  timeline: ["checkpoints", "chain_hash"],
+  checkpoint: ["at", "words", "chars", "hash"],
+  ai_range: ["from", "to", "model", "when"],
+  claim: ["excerpt", "source_url", "status"],
+  signature: ["alg", "public_key", "value"],
+};
+
+function unknownMembers(o: unknown, allowed: readonly string[], where: string): string[] {
+  if (!isObject(o)) return [];
+  return Object.keys(o)
+    .filter((k) => !allowed.includes(k))
+    .map((k) => (where ? `${where}.${k}` : k));
+}
+
 /**
  * Names the structural problems that stop verification being meaningful.
  * Empty means the document has the shape the format defines, so the
@@ -326,6 +346,27 @@ async function verifyBundleInner(input: unknown, body?: string): Promise<VerifyR
     return { ok: false, checks, fingerprint: "" };
   }
   const b = input as Bundle;
+
+  // The credential is deliberately exempt: it is a C2PA-aligned object
+  // whose own signature covers every member it carries, including ones
+  // this format does not model, so an unknown member there is signed.
+  const strays = [
+    ...unknownMembers(b, MEMBERS[""], ""),
+    ...unknownMembers(b.post, MEMBERS.post, "post"),
+    ...unknownMembers(b.timeline, MEMBERS.timeline, "timeline"),
+    ...unknownMembers(b.signature, MEMBERS.signature, "signature"),
+    ...(b.timeline?.checkpoints ?? []).flatMap((cp, i) =>
+      unknownMembers(cp, MEMBERS.checkpoint, `timeline.checkpoints[${i}]`)),
+    ...(b.ai_ranges ?? []).flatMap((r, i) => unknownMembers(r, MEMBERS.ai_range, `ai_ranges[${i}]`)),
+    ...(b.claims ?? []).flatMap((c, i) => unknownMembers(c, MEMBERS.claim, `claims[${i}]`)),
+  ];
+  checks.push({
+    name: "Only signed fields present",
+    ok: strays.length === 0,
+    detail: strays.length === 0
+      ? undefined
+      : `carries content the signature does not cover: ${strays.join(", ")}`,
+  });
 
   checks.push({ name: "Schema recognised", ok: b.schema === SCHEMA });
 

@@ -131,3 +131,26 @@ describe("canonical wire forms", () => {
   });
 });
 
+
+describe("unsigned members", () => {
+  it("refuses a bundle carrying content the signature does not cover", async () => {
+    for (const mutate of [
+      (b: Bundle) => ((b as Record<string, unknown>).surprise = 1),
+      (b: Bundle) => ((b.post as unknown as Record<string, unknown>).surprise = 1),
+      (b: Bundle) => ((b.timeline.checkpoints[0] as unknown as Record<string, unknown>).surprise = 1),
+      (b: Bundle) => ((b.signature as unknown as Record<string, unknown>).surprise = 1),
+    ]) {
+      const b = clone();
+      mutate(b);
+      const res = await verifyBundle(b);
+      const check = res.checks.find((c) => c.name === "Only signed fields present");
+      expect(check?.ok).toBe(false);
+      expect(res.ok).toBe(false);
+    }
+  });
+
+  it("accepts the fixture, which carries only defined members", async () => {
+    const res = await verifyBundle(fixture.bundle, fixture.body);
+    expect(res.checks.find((c) => c.name === "Only signed fields present")?.ok).toBe(true);
+  });
+});

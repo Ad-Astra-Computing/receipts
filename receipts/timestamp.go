@@ -3,6 +3,7 @@
 package receipts
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -23,6 +24,25 @@ import (
 // implementation and fail in the other, and a format whose whole promise
 // is that anyone can write a verifier cannot afford that. So a
 // non-canonical timestamp is not normalized on the way in, it is refused.
+
+// strictUnmarshal decodes into v and refuses any member the target type
+// does not define.
+//
+// The signing digest (section 6) covers a fixed list of fields, so a
+// member outside that list is carried but not signed. Accepting one
+// would let a bundle hold content the signature says nothing about while
+// the verifier reports that nothing was altered, which is the single
+// claim this format makes. Forward compatibility belongs to a new schema
+// string, where a verifier knows it is looking at something else, not to
+// unsigned members of this one.
+func strictUnmarshal(data []byte, v any) error {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(v); err != nil {
+		return err
+	}
+	return nil
+}
 
 // canonicalTimestamp parses a wire timestamp and rejects any rendering
 // other than the one section 4 requires.
@@ -55,7 +75,7 @@ func (c *Checkpoint) UnmarshalJSON(data []byte) error {
 		Chars int    `json:"chars"`
 		Hash  string `json:"hash"`
 	}
-	if err := json.Unmarshal(data, &w); err != nil {
+	if err := strictUnmarshal(data, &w); err != nil {
 		return err
 	}
 	at, err := canonicalTimestamp(w.At)
@@ -77,7 +97,7 @@ func (r *AIRange) UnmarshalJSON(data []byte) error {
 		Model string `json:"model"`
 		When  string `json:"when"`
 	}
-	if err := json.Unmarshal(data, &w); err != nil {
+	if err := strictUnmarshal(data, &w); err != nil {
 		return err
 	}
 	if w.When != "" {
@@ -95,7 +115,7 @@ func (b *Bundle) UnmarshalJSON(data []byte) error {
 	// A local type with no methods, so this does not recurse.
 	type bundle Bundle
 	var raw bundle
-	if err := json.Unmarshal(data, &raw); err != nil {
+	if err := strictUnmarshal(data, &raw); err != nil {
 		return err
 	}
 	var probe struct {
@@ -108,5 +128,50 @@ func (b *Bundle) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("bundle: %w", err)
 	}
 	*b = Bundle(raw)
+	return nil
+}
+
+// PostRef, TimelineDigest, ClaimRef and Signature decode strictly too:
+// DisallowUnknownFields applies to the type being decoded, not to the
+// types nested inside it, so without these an unsigned member could hide
+// one level down.
+
+func (p *PostRef) UnmarshalJSON(data []byte) error {
+	type postRef PostRef
+	var raw postRef
+	if err := strictUnmarshal(data, &raw); err != nil {
+		return fmt.Errorf("post: %w", err)
+	}
+	*p = PostRef(raw)
+	return nil
+}
+
+func (t *TimelineDigest) UnmarshalJSON(data []byte) error {
+	type timeline TimelineDigest
+	var raw timeline
+	if err := strictUnmarshal(data, &raw); err != nil {
+		return fmt.Errorf("timeline: %w", err)
+	}
+	*t = TimelineDigest(raw)
+	return nil
+}
+
+func (c *ClaimRef) UnmarshalJSON(data []byte) error {
+	type claimRef ClaimRef
+	var raw claimRef
+	if err := strictUnmarshal(data, &raw); err != nil {
+		return fmt.Errorf("claim: %w", err)
+	}
+	*c = ClaimRef(raw)
+	return nil
+}
+
+func (s *Signature) UnmarshalJSON(data []byte) error {
+	type signature Signature
+	var raw signature
+	if err := strictUnmarshal(data, &raw); err != nil {
+		return fmt.Errorf("signature: %w", err)
+	}
+	*s = Signature(raw)
 	return nil
 }
