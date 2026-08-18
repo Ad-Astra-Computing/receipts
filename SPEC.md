@@ -209,11 +209,25 @@ signing without detection.
 
 ### 3.3 Duplicate member names
 
-A conforming producer MUST NOT emit an object with a duplicated member
-name. Behaviour on receiving one is not defined by this version: JSON
-parsers differ, typically taking either the first or the last, and two
-verifiers may therefore disagree about such a document. A verifier
-SHOULD reject a duplicate rather than choose.
+A producer MUST NOT emit an object with a duplicated member name, and a
+verifier MUST reject a document that contains one, at any depth.
+
+Leaving this to the parser does not work. Parsers keep one value and
+discard the other, and they do not all keep the same one, so a document
+with a duplicate means different things to different verifiers while the
+signature covers only one of those meanings. There is no safe way to
+choose between them, and choosing quietly is the worst option, so the
+document is refused.
+
+The same applies to a `\uD800`-`\uDFFF` escape with no partner. It is
+not a character: some implementations preserve it, others substitute
+U+FFFD, and the two then canonicalize different strings and compute
+different digests for one file. A verifier MUST reject a lone surrogate
+escape, and MUST reject input that is not valid UTF-8.
+
+Both are properties of the received bytes rather than of the parsed
+value, so a verifier MUST check them before or during parsing. Afterwards
+the evidence is gone.
 
 ## 3a. The transport envelope
 

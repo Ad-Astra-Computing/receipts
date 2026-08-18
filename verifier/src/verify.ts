@@ -328,8 +328,19 @@ function credentialShapeProblem(c: unknown): string | null {
   if (typeof asset.sha256 !== "string" || !SHA256_HEX.test(asset.sha256)) {
     return "asset.sha256 is not 64 lowercase hex characters";
   }
-  if (typeof asset.size === "number" && asset.size < 0) return "asset.size is negative";
+  // Go's decoder is typed, so a string size or a numeric title fails
+  // there. Accepting them here would mean the same credential verifies
+  // in a browser and is refused by a library.
+  if (typeof asset.size !== "number" || !Number.isSafeInteger(asset.size)) {
+    return "asset.size is not a safe integer";
+  }
+  if (asset.size < 0) return "asset.size is negative";
   if (typeof asset.mime !== "string" || asset.mime === "") return "asset.mime is empty";
+  for (const optional of ["title", "url"] as const) {
+    if (asset[optional] !== undefined && typeof asset[optional] !== "string") {
+      return `asset.${optional} is not a string`;
+    }
+  }
   if (typeof c.claim_generator !== "string" || c.claim_generator === "") {
     return "claim_generator is empty";
   }
@@ -337,8 +348,19 @@ function credentialShapeProblem(c: unknown): string | null {
       c.claim_generator_info.name === "") {
     return "claim_generator_info.name is empty";
   }
+  for (const optional of ["version", "url"] as const) {
+    const v = (c.claim_generator_info as Record<string, unknown>)[optional];
+    if (v !== undefined && typeof v !== "string") {
+      return `claim_generator_info.${optional} is not a string`;
+    }
+  }
   if (!isCanonicalTime(c.created_at)) return "created_at is missing or not canonical";
   if (!Array.isArray(c.assertions)) return "assertions is missing";
+  for (const [i, a] of c.assertions.entries()) {
+    if (!isObject(a)) return `assertions[${i}] is not an object`;
+    if (typeof a.label !== "string" || a.label === "") return `assertions[${i}].label is empty`;
+    if (!("data" in a)) return `assertions[${i}].data is missing`;
+  }
   return null;
 }
 

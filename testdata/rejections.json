@@ -14,7 +14,9 @@
     "disagreement about what is valid.",
     "",
     "path is dot-separated; numeric segments index arrays. Use set to",
-    "replace a value, or delete: true to remove the member."
+    "replace a value, or delete: true to remove the member.",
+    "",
+    "Cases with `raw` are applied to the serialized text rather than the parsed object, because duplicate members and lone surrogates cannot survive a parse. `raw.duplicate` names a top-level member to repeat; `raw.injectString` replaces the first occurrence of `find` with `replace` in the text."
   ],
   "cases": [
     {
@@ -172,6 +174,23 @@
       "why": "SPEC 5: the chain value is what makes the timeline tamper-evident",
       "path": "timeline.chain_hash",
       "delete": true
+    },
+    {
+      "name": "duplicate top-level member",
+      "why": "SPEC 3.3: parsers keep different values, so the document means two things",
+      "raw": {
+        "duplicate": "schema"
+      }
+    },
+    {
+      "name": "lone high surrogate in the title",
+      "why": "SPEC 3.3: not a character; implementations substitute differently",
+      "raw": {
+        "injectString": {
+          "find": "\"title\": \"",
+          "replace": "\"title\": \"\\ud800"
+        }
+      }
     }
   ]
 }

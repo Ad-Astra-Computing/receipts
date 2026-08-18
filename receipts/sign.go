@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"unicode/utf8"
 )
 
 // Sign fills in b.Signature with an Ed25519 signature over the signing
@@ -148,6 +149,22 @@ func VerifyBody(b Bundle, body []byte) error {
 	sum := sha256.Sum256(body)
 	if hex.EncodeToString(sum[:]) != b.Post.SHA256 {
 		return errors.New("receipts: body does not match bundle hash")
+	}
+	// Once the body is in hand, the disclosed ranges can be checked
+	// against it. Without this a receipt could point past the end of the
+	// text it describes, or into the middle of a character, and still
+	// verify: the reader would be shown a disclosure that does not
+	// correspond to anything they can read.
+	for i, r := range b.AIRanges {
+		if r.To > len(body) {
+			return fmt.Errorf("receipts: ai_ranges[%d] ends past the end of the body", i)
+		}
+		if !utf8.RuneStart(body[r.From]) {
+			return fmt.Errorf("receipts: ai_ranges[%d].from is inside a character, not at its start", i)
+		}
+		if r.To < len(body) && !utf8.RuneStart(body[r.To]) {
+			return fmt.Errorf("receipts: ai_ranges[%d].to is inside a character, not at its start", i)
+		}
 	}
 	return nil
 }
