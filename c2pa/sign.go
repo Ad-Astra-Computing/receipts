@@ -71,7 +71,64 @@ func Sign(m Manifest, key ed25519.PrivateKey) (SignedManifest, error) {
 // not whole-second UTC (SPEC.md section 3). Malformed input is an
 // error, never a panic, so a verifier can reject a credential rather
 // than abort.
+// ValidateShape checks that a credential is the object SPEC section 7
+// describes, before any cryptography is attempted.
+//
+// A signature proves that whatever is in front of you was signed by the
+// named key. It says nothing about whether that object is a content
+// credential. Without this, a signed `{"asset":{"sha256":...},
+// "signature":...}` verifies and gets presented to a reader as a valid
+// content credential, which is a stronger thing than what was checked.
+func ValidateShape(s SignedManifest) error {
+	if s.Context != ContextURI {
+		return fmt.Errorf("c2pa: @context is %q, want %q", s.Context, ContextURI)
+	}
+	if s.Type != ManifestType {
+		return fmt.Errorf("c2pa: type is %q, want %q", s.Type, ManifestType)
+	}
+	if !isSHA256Hex(s.Asset.SHA256) {
+		return fmt.Errorf("c2pa: asset.sha256 is not 64 lowercase hex characters")
+	}
+	if s.Asset.Size < 0 {
+		return fmt.Errorf("c2pa: asset.size is negative")
+	}
+	if s.Asset.MIME == "" {
+		return errors.New("c2pa: asset.mime is empty")
+	}
+	if s.ClaimGenerator == "" {
+		return errors.New("c2pa: claim_generator is empty")
+	}
+	if s.GeneratorInfo.Name == "" {
+		return errors.New("c2pa: claim_generator_info.name is empty")
+	}
+	if s.CreatedAt.IsZero() {
+		return errors.New("c2pa: created_at is missing")
+	}
+	if s.Assertions == nil {
+		return errors.New("c2pa: assertions is missing")
+	}
+	return nil
+}
+
+// isSHA256Hex reports whether h is exactly 64 lowercase hex digits.
+// Case matters: SPEC section 4 fixes lowercase, and a verifier that
+// accepted either would compare hashes that a stricter one would not.
+func isSHA256Hex(h string) bool {
+	if len(h) != 64 {
+		return false
+	}
+	for _, c := range h {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
 func Verify(s SignedManifest) error {
+	if err := ValidateShape(s); err != nil {
+		return err
+	}
 	if s.Signature.Alg != "Ed25519" {
 		return fmt.Errorf("c2pa: unsupported alg %q", s.Signature.Alg)
 	}

@@ -116,3 +116,54 @@ func TestUnknownCredentialMembersSurviveARoundTrip(t *testing.T) {
 		t.Fatalf("a credential with an unknown member should still verify: %v", err)
 	}
 }
+
+// A signature proves that this object was signed by that key. It does
+// not prove the object is a content credential. Without a shape check, a
+// signed pair of fields is presented to a reader as one.
+func TestSignedButShapelessIsNotACredential(t *testing.T) {
+	_, key, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Everything the cryptography needs, nothing that makes it a credential.
+	bare := SignedManifest{
+		Manifest: Manifest{Asset: Asset{SHA256: strings.Repeat("a", 64), Size: 1, MIME: "text/markdown"}},
+	}
+	digest, err := Digest(bare)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub := key.Public().(ed25519.PublicKey)
+	bare.Signature = Signature{
+		Alg:       "Ed25519",
+		PublicKey: base64.RawURLEncoding.EncodeToString(pub),
+		Value:     base64.RawURLEncoding.EncodeToString(ed25519.Sign(key, digest)),
+	}
+	if err := Verify(bare); err == nil {
+		t.Fatal("a genuinely signed object with no credential shape was accepted as a credential")
+	}
+}
+
+func TestValidateShapeNamesWhatIsMissing(t *testing.T) {
+	good, _ := testManifest(t)
+	for name, break_ := range map[string]func(*SignedManifest){
+		"@context":             func(s *SignedManifest) { s.Context = "https://example.com/other" },
+		"type":                 func(s *SignedManifest) { s.Type = "SomethingElse" },
+		"asset.sha256":         func(s *SignedManifest) { s.Asset.SHA256 = "AA" },
+		"asset.mime":           func(s *SignedManifest) { s.Asset.MIME = "" },
+		"claim_generator":      func(s *SignedManifest) { s.ClaimGenerator = "" },
+		"claim_generator_info": func(s *SignedManifest) { s.GeneratorInfo.Name = "" },
+		"assertions":           func(s *SignedManifest) { s.Assertions = nil },
+	} {
+		t.Run(name, func(t *testing.T) {
+			bad := good
+			break_(&bad)
+			if err := ValidateShape(bad); err == nil {
+				t.Fatalf("accepted a credential with a broken %s", name)
+			}
+		})
+	}
+	if err := ValidateShape(good); err != nil {
+		t.Fatalf("rejected a well-formed credential: %v", err)
+	}
+}

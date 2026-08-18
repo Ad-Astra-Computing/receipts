@@ -306,6 +306,34 @@ function unknownMembers(o: unknown, allowed: readonly string[], where: string): 
     .map((k) => (where ? `${where}.${k}` : k));
 }
 
+const C2PA_CONTEXT = "https://c2pa.org/ns/manifest/1.4";
+const C2PA_TYPE = "ContentCredential";
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+
+/** Names the first way a credential fails SPEC section 7, or null. */
+function credentialShapeProblem(c: unknown): string | null {
+  if (!isObject(c)) return "it is not an object";
+  const asset = c.asset;
+  if (c["@context"] !== C2PA_CONTEXT) return `@context is not ${C2PA_CONTEXT}`;
+  if (c.type !== C2PA_TYPE) return `type is not ${C2PA_TYPE}`;
+  if (!isObject(asset)) return "asset is missing";
+  if (typeof asset.sha256 !== "string" || !SHA256_HEX.test(asset.sha256)) {
+    return "asset.sha256 is not 64 lowercase hex characters";
+  }
+  if (typeof asset.size === "number" && asset.size < 0) return "asset.size is negative";
+  if (typeof asset.mime !== "string" || asset.mime === "") return "asset.mime is empty";
+  if (typeof c.claim_generator !== "string" || c.claim_generator === "") {
+    return "claim_generator is empty";
+  }
+  if (!isObject(c.claim_generator_info) || typeof c.claim_generator_info.name !== "string" ||
+      c.claim_generator_info.name === "") {
+    return "claim_generator_info.name is empty";
+  }
+  if (!isCanonicalTime(c.created_at)) return "created_at is missing or not canonical";
+  if (!Array.isArray(c.assertions)) return "assertions is missing";
+  return null;
+}
+
 /**
  * Names the structural problems that stop verification being meaningful.
  * Empty means the document has the shape the format defines, so the
@@ -438,6 +466,12 @@ async function verifyBundleInner(input: unknown, body?: string): Promise<VerifyR
     const credSig = cred?.signature as Signature | undefined;
     if (!credSig || typeof credSig !== "object") {
       credDetail = "the content credential has no signature";
+    } else if (credentialShapeProblem(cred) !== null) {
+      // A signature proves this object was signed by that key. It does
+      // not prove the object is a content credential, and calling it one
+      // is a stronger claim than the cryptography supports. Go refuses
+      // the same shapes (c2pa.ValidateShape).
+      credDetail = `the content credential is not shaped like one: ${credentialShapeProblem(cred)}`;
     } else {
       const sigVerified = await ed25519Verify(
         credSig.alg,

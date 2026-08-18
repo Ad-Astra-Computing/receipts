@@ -154,3 +154,21 @@ describe("unsigned members", () => {
     expect(res.checks.find((c) => c.name === "Only signed fields present")?.ok).toBe(true);
   });
 });
+
+describe("credential shape", () => {
+  it("refuses a signed object that is not a content credential", async () => {
+    for (const [what, mutate] of [
+      ["@context", (c: Record<string, unknown>) => (c["@context"] = "https://example.com/x")],
+      ["type", (c: Record<string, unknown>) => (c.type = "SomethingElse")],
+      ["asset.sha256", (c: Record<string, unknown>) => ((c.asset as Record<string, unknown>).sha256 = "AA")],
+      ["claim_generator", (c: Record<string, unknown>) => (c.claim_generator = "")],
+      ["assertions", (c: Record<string, unknown>) => delete c.assertions],
+    ] as const) {
+      const b = clone();
+      mutate(b.credential as unknown as Record<string, unknown>);
+      const res = await verifyBundle(b);
+      const check = res.checks.find((c) => c.name === "Content credential valid");
+      expect(check?.ok, `accepted a credential with a broken ${what}`).toBe(false);
+    }
+  });
+});
