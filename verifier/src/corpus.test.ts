@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { verifyBundle, type Bundle } from "./verify";
+import { jsonTextProblem } from "./jsontext";
 
 // The shared rejection corpus, the same file the Go suite reads
 // (../../testdata/rejections.json, applied by corpus_test.go). Both
@@ -11,7 +12,16 @@ import { verifyBundle, type Bundle } from "./verify";
 // opposite failure, where one side accepts what the other refuses, and
 // that is how offset timestamps, padded base64 and unsigned extra
 // members all got in.
-type Case = { name: string; why: string; path: string; set?: unknown; delete?: boolean };
+type Case = {
+  name: string;
+  why: string;
+  path?: string;
+  set?: unknown;
+  delete?: boolean;
+  // Raw cases mutate the serialized text, for properties a parse
+  // destroys: duplicate members and lone surrogates.
+  raw?: { duplicate?: string; injectString?: { find: string; replace: string } };
+};
 
 const corpus = JSON.parse(
   readFileSync(fileURLToPath(new URL("../../testdata/rejections.json", import.meta.url)), "utf8"),
@@ -22,7 +32,7 @@ const fixture = JSON.parse(
 ) as { bundle: Bundle; body: string };
 
 function apply(obj: Record<string, unknown>, c: Case): void {
-  const path = c.path.split(".");
+  const path = (c.path ?? "").split(".");
   let cur: unknown = obj;
   for (let i = 0; i < path.length - 1; i++) {
     const seg = path[i];
@@ -49,6 +59,21 @@ describe("shared rejection corpus", () => {
 
   for (const c of corpus.cases) {
     it(`refuses: ${c.name}`, async () => {
+      if (c.raw) {
+        let text = JSON.stringify(fixture.bundle, null, 2);
+        if (c.raw.duplicate) {
+          const needle = `"${c.raw.duplicate}":`;
+          const idx = text.indexOf(needle);
+          expect(idx, `${c.raw.duplicate} is not in the fixture`).toBeGreaterThan(-1);
+          text = text.slice(0, idx) + needle + ` "repeated",` + text.slice(idx);
+        } else if (c.raw.injectString) {
+          const { find, replace } = c.raw.injectString;
+          expect(text.includes(find), `${find} is not in the fixture`).toBe(true);
+          text = text.replace(find, replace);
+        }
+        expect(jsonTextProblem(text), c.why).not.toBeNull();
+        return;
+      }
       const b = JSON.parse(JSON.stringify(fixture.bundle)) as Record<string, unknown>;
       apply(b, c);
       const res = await verifyBundle(b);

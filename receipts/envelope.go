@@ -22,6 +22,11 @@ import (
 // body is nil when the file carried no body. A caller MUST NOT treat
 // that as a passed body check: it means nothing was compared.
 func Decode(data []byte) (Bundle, []byte, error) {
+	// Checked on the bytes, before parsing destroys the evidence:
+	// duplicate members and lone surrogates (see jsontext.go).
+	if err := validateJSONText(data); err != nil {
+		return Bundle{}, nil, err
+	}
 	var probe map[string]json.RawMessage
 	if err := json.Unmarshal(data, &probe); err != nil {
 		return Bundle{}, nil, fmt.Errorf("receipts: not a JSON object: %w", err)

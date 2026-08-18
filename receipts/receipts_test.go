@@ -209,3 +209,34 @@ func TestDigestTimelineChainsEveryField(t *testing.T) {
 		t.Fatalf("empty timeline chain hash = %q, want empty", got.ChainHash)
 	}
 }
+
+// A disclosed range is a claim about specific characters of the
+// published text. Once the text is in hand, a range that runs past its
+// end, or that starts inside a character, describes nothing the reader
+// can see, and must not verify.
+func TestVerifyBody_rejectsRangesThatDoNotFitTheBody(t *testing.T) {
+	key := testKey(t)
+	const body = "héllo world, this is the published text"
+	withRanges := func(rs []receipts.AIRange) receipts.Bundle {
+		b := buildBundle(t, key, body)
+		b.AIRanges = rs
+		signed, err := receipts.Sign(b, key)
+		if err != nil {
+			t.Fatalf("sign: %v", err)
+		}
+		return signed
+	}
+
+	// Past the end.
+	if err := receipts.VerifyBody(withRanges([]receipts.AIRange{{From: 0, To: len(body) + 5}}), []byte(body)); err == nil {
+		t.Error("accepted a range ending past the end of the body")
+	}
+	// Starting inside the two-byte é.
+	if err := receipts.VerifyBody(withRanges([]receipts.AIRange{{From: 2, To: 6}}), []byte(body)); err == nil {
+		t.Error("accepted a range starting inside a character")
+	}
+	// A range that does fit, on character boundaries, still verifies.
+	if err := receipts.VerifyBody(withRanges([]receipts.AIRange{{From: 0, To: 6}}), []byte(body)); err != nil {
+		t.Errorf("rejected a range that fits the body: %v", err)
+	}
+}

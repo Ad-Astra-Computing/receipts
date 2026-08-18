@@ -19,6 +19,15 @@ type rejectionCase struct {
 	Path   string          `json:"path"`
 	Set    json.RawMessage `json:"set"`
 	Delete bool            `json:"delete"`
+	// Raw cases mutate the serialized text, for properties a parse
+	// destroys: duplicate members and lone surrogates.
+	Raw *struct {
+		Duplicate    string `json:"duplicate"`
+		InjectString *struct {
+			Find    string `json:"find"`
+			Replace string `json:"replace"`
+		} `json:"injectString"`
+	} `json:"raw"`
 }
 
 // TestRejectionCorpus applies each shared mutation to the verifier
@@ -64,6 +73,28 @@ func TestRejectionCorpus(t *testing.T) {
 
 	for _, c := range corpus.Cases {
 		t.Run(c.Name, func(t *testing.T) {
+			if c.Raw != nil {
+				text := string(fixture.Bundle)
+				switch {
+				case c.Raw.Duplicate != "":
+					// Repeat a member by reopening the object.
+					needle := `"` + c.Raw.Duplicate + `":`
+					idx := strings.Index(text, needle)
+					if idx < 0 {
+						t.Fatalf("%q is not in the fixture", c.Raw.Duplicate)
+					}
+					text = text[:idx] + needle + `"repeated",` + text[idx:]
+				case c.Raw.InjectString != nil:
+					if !strings.Contains(text, c.Raw.InjectString.Find) {
+						t.Fatalf("%q is not in the fixture", c.Raw.InjectString.Find)
+					}
+					text = strings.Replace(text, c.Raw.InjectString.Find, c.Raw.InjectString.Replace, 1)
+				}
+				if _, _, err := receipts.Decode([]byte(text)); err == nil {
+					t.Fatalf("accepted %q; %s", c.Name, c.Why)
+				}
+				return
+			}
 			var obj map[string]any
 			if err := json.Unmarshal(fixture.Bundle, &obj); err != nil {
 				t.Fatal(err)

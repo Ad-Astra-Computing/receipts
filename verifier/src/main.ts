@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { verifyBundle, type Bundle } from "./verify";
 import { renderReceipt } from "./render";
+import { jsonTextProblem } from "./jsontext";
 // The hero sample is bundled in, not fetched, so it is instant and
 // cannot fail at the edge. Swap this file to change the demo receipt.
 import sampleData from "./sample.receipts.json";
@@ -46,7 +47,16 @@ function extract(data: unknown): { bundle: Bundle; body?: string } {
 async function loadFile(f: File) {
   card().classList.add("has-file");
   try {
-    const { bundle, body } = extract(JSON.parse(await f.text()));
+    const text = await f.text();
+    // Duplicate members and lone surrogates are properties of the text,
+    // and JSON.parse destroys the evidence of both.
+    const textProblem = jsonTextProblem(text);
+    if (textProblem) {
+      inner().setAttribute("aria-busy", "false");
+      inner().textContent = `${f.name} cannot be checked: ${textProblem}.`;
+      return;
+    }
+    const { bundle, body } = extract(JSON.parse(text));
     await show(bundle, body, true, f.name);
     card().scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
   } catch {
