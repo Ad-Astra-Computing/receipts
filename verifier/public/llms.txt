@@ -7,14 +7,18 @@ When text is cheap to generate, a clean final draft is no longer evidence that s
 ## What a valid receipt proves
 
 - Nothing in the receipt was altered after it was signed: the title, the text, the composition timeline, the disclosed AI passages and the sourced claims.
-- The composition checkpoints were recorded in order and none was edited or removed later.
+- The composition timeline is exactly the one that was signed: no checkpoint has been reordered, inserted or removed since.
 - The embedded C2PA-aligned content credential carries its own valid signature and binds the same text and the same key as the receipt around it.
 
 ## What it does not prove
 
 - Who holds the signing key. A key belongs to a machine and its owner, not to a verified identity.
-- That the timeline reflects honest work. A determined author could compose elsewhere and record a tidy history before signing.
+- That the timeline reflects honest work. The signature binds the timeline that was presented at signing, so an author could compose elsewhere, or prune the record, and sign the tidy version.
 - That undisclosed text is human-written. Disclosure is the author's choice; the receipt binds what was disclosed, not what was not.
+
+## How to verify one
+
+Open [receiptsofthought.com](https://receiptsofthought.com/) and drop the `.receipts.json` file on the page. The check runs in the browser with WebCrypto: the file is never uploaded, and the page makes no network request while verifying, which its content security policy enforces. A verifier can also be built from the specification alone, and this one can be self-hosted.
 
 ## The pieces
 

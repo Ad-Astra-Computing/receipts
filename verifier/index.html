@@ -53,6 +53,43 @@
             }
           },
           {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is a receipt of thought?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "A signed, tamper-evident record of how a piece of writing was made: the composition timeline, the passages the author disclosed as AI-written, the claims they sourced, and an embedded C2PA-aligned content credential. It travels with the writing as one .receipts.json file."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does a receipt prove a human wrote the text?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No, and it does not claim to. A receipt proves nothing was altered after signing and that the disclosed record is the one that was signed. It cannot prove who holds the signing key, that the timeline reflects honest work, or that undisclosed text is human-written. Disclosure is the author's choice."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do you verify a receipt?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Drop the .receipts.json file onto receiptsofthought.com. Verification runs entirely in the browser using WebCrypto, so the file is never uploaded and no server is involved. You can also read the specification and run your own verifier, or host this one yourself."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is the format open?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. The receipts format specification, the Ed25519 signing scheme, the Go module and this client-side verifier are Apache-2.0, so anyone can reimplement a producer or a verifier. Folio, the desktop writing app that produces receipts, is licensed separately under AGPL-3.0."
+                }
+              }
+            ]
+          },
+          {
             "@type": "SoftwareApplication",
             "name": "Folio",
             "applicationCategory": "Text editor",
@@ -149,7 +186,7 @@
             <dd>
               <ul>
                 <li>Nothing in the receipt was altered after signing: title, text, timeline, disclosed AI passages, sourced claims.</li>
-                <li>The composition checkpoints were recorded in order, and none was edited or removed later.</li>
+                <li>The composition timeline is exactly the one that was signed: no checkpoint has been reordered, inserted or removed since.</li>
                 <li>The text shown is the text that was signed.</li>
                 <li>The embedded C2PA-aligned content credential carries its own valid signature and names the same text and the same key as the receipt around it. This page verifies that credential's signature and bindings itself.</li>
               </ul>
@@ -160,7 +197,7 @@
             <dd>
               <ul>
                 <li>Who holds the signing key. A key belongs to a machine and its owner, not to a verified identity.</li>
-                <li>That the timeline reflects honest work. A determined author could compose elsewhere and record a tidy history before signing.</li>
+                <li>That the timeline reflects honest work. The signature binds the timeline presented at signing, so an author could compose elsewhere, or prune the record, and sign the tidy version.</li>
                 <li>That undisclosed text is human-written. Disclosure is the author's choice; the receipt binds what was disclosed, not what was not.</li>
               </ul>
             </dd>
