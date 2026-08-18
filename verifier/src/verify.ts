@@ -385,7 +385,13 @@ function structuralProblems(b: unknown): string[] {
       if (required) p.push(`${name} is missing`);
       return;
     }
-    if (typeof v !== "string") p.push(`${name} is not a string`);
+    if (typeof v !== "string") {
+      p.push(`${name} is not a string`);
+      return;
+    }
+    // Go rejects an empty excerpt or source_url; a required string that
+    // is present but empty is not present in any useful sense.
+    if (required && v === "") p.push(`${name} is empty`);
   };
   const int = (v: unknown, name: string, required = false) => {
     if (v === undefined || v === null) {
@@ -437,6 +443,9 @@ function structuralProblems(b: unknown): string[] {
         int(cp.words, `timeline.checkpoints[${i}].words`, true);
         int(cp.chars, `timeline.checkpoints[${i}].chars`, true);
         str(cp.hash, `timeline.checkpoints[${i}].hash`, true);
+        if (typeof cp.hash === "string" && cp.hash !== "" && !SHA256_HEX.test(cp.hash)) {
+          p.push(`timeline.checkpoints[${i}].hash is not 64 lowercase hex characters`);
+        }
       });
     }
   }
@@ -634,6 +643,29 @@ async function verifyBundleInner(input: unknown, body?: string): Promise<VerifyR
       name: "Bundled text matches the receipt",
       ok,
       detail: ok ? undefined : "the text in this bundle does not match its own hash",
+    });
+
+    // With the text in hand the disclosed ranges can be placed in it.
+    // Go does this in VerifyBody; without it here, a receipt pointing
+    // past the end of the text, or into the middle of a character,
+    // verifies in the browser and is refused by the library.
+    const bytes = enc.encode(body);
+    const bad: string[] = [];
+    for (const [i, r] of (b.ai_ranges ?? []).entries()) {
+      if (r.to > bytes.length) {
+        bad.push(`ai_ranges[${i}] ends past the end of the text`);
+        continue;
+      }
+      // A UTF-8 continuation byte is 10xxxxxx: a range boundary landing
+      // on one is inside a character rather than at its start.
+      const isContinuation = (at: number) => at < bytes.length && (bytes[at] & 0xc0) === 0x80;
+      if (isContinuation(r.from)) bad.push(`ai_ranges[${i}].from is inside a character`);
+      if (isContinuation(r.to)) bad.push(`ai_ranges[${i}].to is inside a character`);
+    }
+    checks.push({
+      name: "Disclosed passages fit the text",
+      ok: bad.length === 0,
+      detail: bad.length === 0 ? undefined : bad.join(", "),
     });
   }
 

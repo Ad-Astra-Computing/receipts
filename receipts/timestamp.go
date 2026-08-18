@@ -5,6 +5,7 @@ package receipts
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -69,11 +70,14 @@ func canonicalTimestamp(s string) (time.Time, error) {
 // UnmarshalJSON refuses a checkpoint whose `at` is not canonical, so the
 // string the chain hashes is always the string on the wire.
 func (c *Checkpoint) UnmarshalJSON(data []byte) error {
+	// Pointers so a missing or null member is distinguishable from zero.
+	// Without that, a checkpoint carrying no counts decoded to 0 and
+	// verified, while the TypeScript verifier refused it as missing.
 	var w struct {
-		At    string `json:"at"`
-		Words int    `json:"words"`
-		Chars int    `json:"chars"`
-		Hash  string `json:"hash"`
+		At    string  `json:"at"`
+		Words *int    `json:"words"`
+		Chars *int    `json:"chars"`
+		Hash  *string `json:"hash"`
 	}
 	if err := strictUnmarshal(data, &w); err != nil {
 		return err
@@ -82,7 +86,10 @@ func (c *Checkpoint) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return fmt.Errorf("checkpoint: %w", err)
 	}
-	c.At, c.Words, c.Chars, c.Hash = at, w.Words, w.Chars, w.Hash
+	if w.Words == nil || w.Chars == nil || w.Hash == nil {
+		return errors.New("checkpoint: words, chars and hash are required")
+	}
+	c.At, c.Words, c.Chars, c.Hash = at, *w.Words, *w.Chars, *w.Hash
 	return nil
 }
 
@@ -92,8 +99,8 @@ func (c *Checkpoint) UnmarshalJSON(data []byte) error {
 // forms, so accepting one here would split the two implementations.
 func (r *AIRange) UnmarshalJSON(data []byte) error {
 	var w struct {
-		From  int     `json:"from"`
-		To    int     `json:"to"`
+		From  *int    `json:"from"`
+		To    *int    `json:"to"`
 		Model string  `json:"model"`
 		When  *string `json:"when"`
 	}
@@ -108,7 +115,10 @@ func (r *AIRange) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("ai_range: %w", err)
 		}
 	}
-	r.From, r.To, r.Model = w.From, w.To, w.Model
+	if w.From == nil || w.To == nil {
+		return errors.New("ai_range: from and to are required")
+	}
+	r.From, r.To, r.Model = *w.From, *w.To, w.Model
 	if w.When != nil {
 		r.When = *w.When
 	}

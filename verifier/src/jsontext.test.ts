@@ -46,3 +46,16 @@ describe("lone surrogates", () => {
     expect(jsonTextProblem(`{"t":"\\uD83E\\uDDF5\\uD800"}`)).not.toBeNull();
   });
 });
+
+// Go compares member names after decoding their escapes, so a name spelled
+// two ways is one member there. A raw comparison here would let the
+// duplicate through and split the two implementations.
+describe("escaped member names", () => {
+  it("sees an escaped spelling as the same member", () => {
+    expect(jsonTextProblem(`{"schema":"a","\\u0073chema":"b"}`)).not.toBeNull();
+  });
+
+  it("still accepts genuinely different names that share a prefix", () => {
+    expect(jsonTextProblem(`{"schema":"a","schema_version":"b"}`)).toBeNull();
+  });
+});

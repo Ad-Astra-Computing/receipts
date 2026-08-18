@@ -24,6 +24,10 @@ import (
 // time would otherwise emit a bundle whose wire form differs from the
 // string the signature covers: valid here, rejected by a verifier that
 // hashes the wire string.
+// Sign refuses to produce a bundle its own Verify would reject. A signer
+// that can emit an artifact its verifier refuses is a trap: the producer
+// hears nothing until a reader checks the receipt, by which point it is
+// published.
 func Sign(b Bundle, key ed25519.PrivateKey) (Bundle, error) {
 	if len(key) != ed25519.PrivateKeySize {
 		return Bundle{}, errors.New("receipts: invalid signing key")
@@ -39,6 +43,9 @@ func Sign(b Bundle, key ed25519.PrivateKey) (Bundle, error) {
 		return Bundle{}, err
 	}
 	b.Signature.Value = base64.RawURLEncoding.EncodeToString(ed25519.Sign(key, digest))
+	if err := Verify(b); err != nil {
+		return Bundle{}, fmt.Errorf("receipts: refusing to sign a bundle that would not verify: %w", err)
+	}
 	return b, nil
 }
 

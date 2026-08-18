@@ -45,6 +45,9 @@ func Digest(s SignedManifest) ([]byte, error) {
 // but a producer may assemble a Manifest by hand, and a credential is
 // not conforming if its wire timestamp carries sub-second precision or
 // a zone offset other than Z.
+// Sign refuses to produce a credential its own Verify would reject.
+// Emitting one is worse than failing: the producer learns nothing until
+// a reader tries to check the receipt, and by then it is published.
 func Sign(m Manifest, key ed25519.PrivateKey) (SignedManifest, error) {
 	if len(key) != ed25519.PrivateKeySize {
 		return SignedManifest{}, errors.New("c2pa: invalid signing key")
@@ -63,6 +66,9 @@ func Sign(m Manifest, key ed25519.PrivateKey) (SignedManifest, error) {
 		return SignedManifest{}, err
 	}
 	signed.Signature.Value = base64.RawURLEncoding.EncodeToString(ed25519.Sign(key, digest))
+	if err := Verify(signed); err != nil {
+		return SignedManifest{}, fmt.Errorf("c2pa: refusing to sign a credential that would not verify: %w", err)
+	}
 	return signed, nil
 }
 
@@ -106,6 +112,11 @@ func ValidateShape(s SignedManifest) error {
 	}
 	if s.Assertions == nil {
 		return errors.New("c2pa: assertions is missing")
+	}
+	for i, a := range s.Assertions {
+		if a.Label == "" {
+			return fmt.Errorf("c2pa: assertions[%d].label is empty", i)
+		}
 	}
 	return nil
 }

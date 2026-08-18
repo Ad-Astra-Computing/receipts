@@ -133,11 +133,12 @@ func TestVerifyRejectsForeignCredential(t *testing.T) {
 	foreign := buildBundle(t, other, sampleBody)
 
 	// A credential signed by a different key, valid in itself, must not
-	// be accepted inside this bundle: one author identity signs both.
+	// be accepted inside this bundle: one key signs both. Sign now
+	// refuses to produce it at all, which is the earlier and better
+	// failure, and Verify still refuses a bundle assembled by hand.
 	b.Credential = foreign.Credential
-	b, err := receipts.Sign(b, key)
-	if err != nil {
-		t.Fatalf("sign: %v", err)
+	if _, err := receipts.Sign(b, key); err == nil {
+		t.Fatal("signed a bundle whose credential belongs to another key")
 	}
 	if err := receipts.Verify(b); err == nil {
 		t.Fatal("expected a credential signed by another key to be rejected")
@@ -149,9 +150,8 @@ func TestVerifyRejectsCredentialBoundToAnotherBody(t *testing.T) {
 	b := buildBundle(t, key, sampleBody)
 	other := buildBundle(t, key, "a different body entirely\n")
 	b.Credential = other.Credential
-	b, err := receipts.Sign(b, key)
-	if err != nil {
-		t.Fatalf("sign: %v", err)
+	if _, err := receipts.Sign(b, key); err == nil {
+		t.Fatal("signed a bundle whose credential describes another body")
 	}
 	if err := receipts.Verify(b); err == nil {
 		t.Fatal("expected a credential bound to another body to be rejected")

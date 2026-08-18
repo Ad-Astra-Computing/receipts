@@ -180,9 +180,12 @@ The packages:
 | `claims` | the sourced-claim wire types, validation and a canonical digest |
 
 `go test ./...` signs a bundle in Go and runs the TypeScript verifier's
-suite against it, so the two implementations cannot drift apart
-unnoticed. It needs the verifier's dependencies installed and skips
-itself when they are not.
+suite against it, and both suites additionally apply a shared corpus of
+inputs that each must refuse (`testdata/rejections.json`). Between them
+they cover agreement on a valid bundle and agreement on the invalid
+inputs listed in that file, which is what has actually been checked
+rather than agreement in general. It needs the verifier's dependencies
+installed and skips itself when they are not.
 
 ## What a valid receipt proves
 

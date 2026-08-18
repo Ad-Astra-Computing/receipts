@@ -2,6 +2,7 @@
 import { verifyBundle, type Bundle } from "./verify";
 import { renderReceipt } from "./render";
 import { jsonTextProblem } from "./jsontext";
+import { tamper, type Tamper } from "./tamper";
 // The hero sample is bundled in, not fetched, so it is instant and
 // cannot fail at the edge. Swap this file to change the demo receipt.
 import sampleData from "./sample.receipts.json";
@@ -35,19 +36,44 @@ async function show(bundle: Bundle, body: string | undefined, animate: boolean, 
   }
 }
 
-function extract(data: unknown): { bundle: Bundle; body?: string } {
-  const d = data as { bundle?: Bundle; body?: string } & Bundle;
-  // A transport envelope carries the published text (SPEC 3a). Anything
-  // other than a string is not that, and passing it on would hash
-  // whatever it happens to stringify as.
-  const body = typeof d?.body === "string" ? d.body : undefined;
-  return { bundle: (d?.bundle ?? d) as Bundle, body };
+/**
+ * Reads a receipts file: either a bare bundle or the transport envelope
+ * of SPEC 3a. Strict about the envelope, as receipts.Decode is in Go:
+ * a document with a `bundle` member is an envelope and may hold nothing
+ * but `bundle` and `body`, and `body` must be text. Being lax here while
+ * the library is strict means the same file is read two ways.
+ */
+function extract(data: unknown): { bundle: Bundle; body?: string; problem?: string } {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    return { bundle: data as Bundle, problem: "this file is not a JSON object" };
+  }
+  const d = data as Record<string, unknown>;
+  if (!("bundle" in d)) return { bundle: data as Bundle };
+
+  const extra = Object.keys(d).filter((k) => k !== "bundle" && k !== "body");
+  if (extra.length > 0) {
+    return { bundle: d.bundle as Bundle, problem: `this envelope has unexpected members: ${extra.join(", ")}` };
+  }
+  if ("body" in d && typeof d.body !== "string") {
+    return { bundle: d.bundle as Bundle, problem: "this envelope's body is not text" };
+  }
+  return { bundle: d.bundle as Bundle, body: d.body as string | undefined };
 }
 
 async function loadFile(f: File) {
   card().classList.add("has-file");
   try {
-    const text = await f.text();
+    // Not f.text(): that replaces invalid UTF-8 with U+FFFD, so a file
+    // Go refuses as malformed would be silently repaired here and then
+    // validated in its repaired form.
+    let text: string;
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(await f.arrayBuffer());
+    } catch {
+      inner().setAttribute("aria-busy", "false");
+      inner().textContent = `${f.name} is not valid UTF-8 text, so it cannot be a receipt.`;
+      return;
+    }
     // Duplicate members and lone surrogates are properties of the text,
     // and JSON.parse destroys the evidence of both.
     const textProblem = jsonTextProblem(text);
@@ -56,7 +82,12 @@ async function loadFile(f: File) {
       inner().textContent = `${f.name} cannot be checked: ${textProblem}.`;
       return;
     }
-    const { bundle, body } = extract(JSON.parse(text));
+    const { bundle, body, problem } = extract(JSON.parse(text));
+    if (problem) {
+      inner().setAttribute("aria-busy", "false");
+      inner().textContent = `${f.name} cannot be checked: ${problem}.`;
+      return;
+    }
     await show(bundle, body, true, f.name);
     card().scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
   } catch {
@@ -105,6 +136,54 @@ function wire() {
   });
 }
 
+/**
+ * The tamper controls. The page claims that changing a receipt after
+ * signing is detectable, and a reader has no reason to take that on
+ * trust, so the buttons make the changes a forger would make and let the
+ * real verifier refuse them here.
+ */
+function wireTamper(bundle: Bundle, body: string | undefined): void {
+  const panel = document.getElementById("tamper");
+  if (!panel) return;
+  panel.hidden = false;
+  const reset = panel.querySelector<HTMLButtonElement>(".tamper-reset");
+  const note = () => document.getElementById("tamper-note");
+
+  const setNote = (text: string | null) => {
+    let el = note();
+    if (!text) {
+      el?.remove();
+      return;
+    }
+    if (!el) {
+      el = document.createElement("p");
+      el.id = "tamper-note";
+      el.className = "tamper-note";
+      el.setAttribute("role", "status");
+      panel.after(el);
+    }
+    el.textContent = text;
+  };
+
+  panel.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-tamper]");
+    if (!btn) return;
+    const kind = btn.dataset.tamper as Tamper | "reset";
+    if (kind === "reset") {
+      if (reset) reset.hidden = true;
+      setNote(null);
+      card().classList.remove("has-file");
+      void show(bundle, body, true);
+      return;
+    }
+    const t = tamper(kind, bundle, body);
+    if (reset) reset.hidden = false;
+    setNote(`${t.note} The receipt no longer verifies.`);
+    card().classList.add("has-file"); // it is no longer the pristine demo
+    void show(t.bundle, t.body, true);
+  });
+}
+
 function main() {
   wire();
   // Auto-verify the bundled sample receipt as the hero.
@@ -115,6 +194,7 @@ function main() {
     painted = true;
     void show(bundle, body, animate);
   };
+  wireTamper(bundle, body);
   // Animate when the hero scrolls into view. Feature-detect first:
   // constructing IntersectionObserver where it is unavailable would
   // throw and leave the hero unpainted.
