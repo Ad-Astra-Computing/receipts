@@ -28,6 +28,82 @@ still agree.
   word and character counts plus a tamper-evident hash chain, never the
   draft text.
 
+Abbreviated, with hashes and signatures cut short. This is the shape of
+[`verifier/public/sample.receipts.json`](verifier/public/sample.receipts.json),
+which is a real signed bundle you can drop on the verifier:
+
+```json
+{
+  "schema": "folio.receipts/1",
+  "generated": "2026-07-20T14:50:51Z",
+  "post": {
+    "title": "Keep the receipts",
+    "url": "https://blog.example.com/post/keep-the-receipts/",
+    "sha256": "5255bc2d12ffef3b…"
+  },
+  "credential": {
+    "@context": "https://c2pa.org/ns/manifest/1.4",
+    "type": "ContentCredential",
+    "asset": {
+      "sha256": "5255bc2d12ffef3b…",
+      "size": 306,
+      "mime": "text/markdown"
+    },
+    "claim_generator": "Folio/0.1.0",
+    "created_at": "2026-07-20T14:50:51Z",
+    "assertions": [
+      "… 3 assertions …"
+    ],
+    "signature": {
+      "alg": "Ed25519",
+      "public_key": "w0rcTkuvjsKMKzJy…",
+      "value": "vIIYinN5I6Y8y7Jh…"
+    }
+  },
+  "ai_ranges": [
+    {
+      "from": 189,
+      "to": 207,
+      "model": "claude-opus-4-8",
+      "when": "2026-07-20T14:50:51Z"
+    }
+  ],
+  "claims": [
+    {
+      "excerpt": "the sentence being sourced",
+      "source_url": "https://example.org/source"
+    }
+  ],
+  "timeline": {
+    "checkpoints": [
+      {
+        "at": "2026-07-18T09:12:00Z",
+        "words": 6,
+        "chars": 34,
+        "hash": "556befc65236be7e…"
+      },
+      {
+        "at": "2026-07-18T09:15:00Z",
+        "words": 21,
+        "chars": 118,
+        "hash": "5aa3660050c2518d…"
+      },
+      "… 12 more …"
+    ],
+    "chain_hash": "16ee9e043dd6945f…"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "public_key": "w0rcTkuvjsKMKzJy…",
+    "value": "JWzQAIi8JaTXBtk4…"
+  }
+}
+```
+
+Note what is not there: no draft text. The timeline carries counts and a
+hash per checkpoint, never the words, so a receipt discloses that the
+piece was written over fourteen sittings without disclosing any sitting.
+
 All of it is signed as one unit with a single Ed25519 key. The format
 version is `folio.receipts/1`. Breaking changes carry a new schema
 string, and verifiers reject schemas they do not recognise.
@@ -52,8 +128,12 @@ It checks:
 ## Use the Go module
 
 ```sh
+nix develop github:Ad-Astra-Computing/receipts   # Go and Node, pinned
 go get github.com/Ad-Astra-Computing/receipts
 ```
+
+`go get` alone is enough if you are not using Nix. The module path has no
+package of its own; import the packages below.
 
 The module is pure format and crypto: it reads no files, opens no
 network connections and never loads, stores or generates a key. A
@@ -123,7 +203,22 @@ from the specification, and its tests run a signed fixture through the
 browser code, including rejection of a tampered body and a reordered
 timeline, so a change that breaks the format fails a test.
 
-## Run the verifier locally
+## Build and run it
+
+The flake is the supported path and needs nothing installed but Nix:
+
+```sh
+nix develop                  # Go and Node, both pinned by flake.lock
+nix flake check              # the Go suite plus the gofmt gate
+nix build .#verifier         # the static site, in ./result
+nix run nixpkgs#python3 -- -m http.server -d result   # serve it
+```
+
+`nix build github:Ad-Astra-Computing/receipts#verifier` does the same
+without cloning, which is the short answer to "can I host the verifier
+myself": yes, in one command, and the output is plain files.
+
+Without Nix:
 
 ```sh
 cd verifier
@@ -139,16 +234,6 @@ a Cloudflare Pages project named `receiptsofthought`; `public/_headers`
 carries the content security policy, including the `connect-src 'none'`
 that makes the no-network promise something the browser enforces rather
 than something we assert.
-
-With Nix, and without installing a toolchain at all:
-
-```sh
-nix build github:Ad-Astra-Computing/receipts#verifier
-```
-
-leaves the built site in `result/`, ready to serve from any static host.
-`nix flake check` runs the Go suite and the gofmt gate, and `nix develop`
-gives you both toolchains.
 
 ## Relationship to C2PA
 
