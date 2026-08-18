@@ -115,7 +115,10 @@ function verdictSentence(bundle: Bundle, body: string | undefined, res: VerifyRe
   let aiPct = 0;
   const ai = bundle.ai_ranges ?? [];
   if (body && ai.length) {
-    aiPct = Math.round((disclosedChars(ai, body.length) / Math.max(1, body.length)) * 100);
+    // Convert first: these are byte offsets, and body.length is UTF-16
+    // code units, so a non-ASCII body produced a wrong percentage.
+    const inString = byteRangesToStringRanges(body, ai);
+    aiPct = Math.round((disclosedChars(inString, body.length) / Math.max(1, body.length)) * 100);
   }
   const cpNote = cps.length ? `, ${words} words over ${cps.length} checkpoint${cps.length === 1 ? "" : "s"}` : "";
   // Only report a percentage when a body was present to compute it against.
@@ -123,7 +126,7 @@ function verdictSentence(bundle: Bundle, body: string | undefined, res: VerifyRe
   // Only claim checks that actually ran. The text check runs only when
   // a body was supplied, so mention "bundled text" only if it did. The
   // C2PA credential is carried inside the signed receipt (its signature
-  // value is bound) but not independently re-verified here.
+  // value is bound) but re-verified in full by verifyBundle.
   const checked = ["the receipt's signature", "the timeline chain"];
   if (res.checks.some((c) => c.name.toLowerCase().includes("text"))) {
     checked.push("the bundled text");

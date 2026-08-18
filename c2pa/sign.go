@@ -78,11 +78,11 @@ func Verify(s SignedManifest) error {
 	if s.CreatedAt.Nanosecond() != 0 || s.CreatedAt.Location() != time.UTC {
 		return errors.New("c2pa: created_at is not a whole-second UTC timestamp")
 	}
-	pub, err := base64.RawURLEncoding.DecodeString(s.Signature.PublicKey)
+	pub, err := base64.RawURLEncoding.Strict().DecodeString(s.Signature.PublicKey)
 	if err != nil || len(pub) != ed25519.PublicKeySize {
 		return errors.New("c2pa: bad public key")
 	}
-	sig, err := base64.RawURLEncoding.DecodeString(s.Signature.Value)
+	sig, err := base64.RawURLEncoding.Strict().DecodeString(s.Signature.Value)
 	if err != nil || len(sig) != ed25519.SignatureSize {
 		return errors.New("c2pa: bad signature value")
 	}

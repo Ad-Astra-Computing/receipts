@@ -99,7 +99,35 @@ const B64URL = /^[A-Za-z0-9_-]+$/;
 export function isCanonicalB64url(s: unknown): boolean {
   // Unpadded base64url is never 1 mod 4 characters long: that length
   // cannot be produced by encoding any byte string.
-  return typeof s === "string" && s.length > 0 && s.length % 4 !== 1 && B64URL.test(s);
+  if (typeof s !== "string" || s.length === 0 || s.length % 4 === 1 || !B64URL.test(s)) {
+    return false;
+  }
+  // Alphabet and length are not enough. The final character of a 2 or 3
+  // mod 4 string carries unused low bits, and a decoder ignores them, so
+  // several different strings decode to the same key or signature. Go's
+  // RawURLEncoding.Strict refuses those; the round trip is the same test
+  // without hand-decoding the last sextet.
+  try {
+    const bytes = rawB64urlToBytes(s);
+    return bytesToB64url(bytes) === s;
+  } catch {
+    return false;
+  }
+}
+
+function bytesToB64url(b: Uint8Array): string {
+  let bin = "";
+  for (const x of b) bin += String.fromCharCode(x);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/** Decodes without the canonical check, for use by that check itself. */
+function rawB64urlToBytes(s: string): Uint8Array {
+  const pad = s.length % 4 === 0 ? "" : "=".repeat(4 - (s.length % 4));
+  const bin = atob(s.replace(/-/g, "+").replace(/_/g, "/") + pad);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
 
 function b64urlToBytes(s: string): Uint8Array {
@@ -225,8 +253,79 @@ export interface VerifyResult {
 
 // verifyBundle runs every check. When body is supplied, it also
 // confirms the bundle describes that exact published body.
-export async function verifyBundle(b: Bundle, body?: string): Promise<VerifyResult> {
+/**
+ * Verifies a bundle. Total over ANY input: this runs on a public page
+ * where the file comes from a stranger, so a malformed or hostile
+ * document has to come back as a failed check, never as a thrown
+ * exception. A thrown exception is an unhandled rejection and a page
+ * that looks broken, which reads as "the verifier is broken" rather
+ * than "this receipt is not valid".
+ *
+ * Structure is therefore established BEFORE anything is hashed, and the
+ * whole body is wrapped as a fail-closed backstop for anything the
+ * structural pass did not anticipate.
+ */
+export async function verifyBundle(input: unknown, body?: string): Promise<VerifyResult> {
+  try {
+    return await verifyBundleInner(input, body);
+  } catch (e) {
+    return {
+      ok: false,
+      checks: [{
+        name: "Readable as a receipt",
+        ok: false,
+        detail: `this file could not be read as a receipt: ${e instanceof Error ? e.message : String(e)}`,
+      }],
+      fingerprint: "",
+    };
+  }
+}
+
+/** True when v is a plain object, which is what every nested field must be. */
+function isObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Names the structural problems that stop verification being meaningful.
+ * Empty means the document has the shape the format defines, so the
+ * cryptographic checks below are checking something real.
+ */
+function structuralProblems(b: unknown): string[] {
+  if (!isObject(b)) return ["the file is not a JSON object"];
+  const p: string[] = [];
+  if (!isObject(b.post)) p.push("post");
+  if (!isObject(b.credential)) p.push("credential");
+  if (!isObject(b.signature)) p.push("signature");
+  if (!isObject(b.timeline)) {
+    p.push("timeline");
+  } else {
+    const cps = (b.timeline as Record<string, unknown>).checkpoints;
+    if (!Array.isArray(cps)) p.push("timeline.checkpoints");
+    else if (!cps.every(isObject)) p.push("timeline.checkpoints entries");
+  }
+  for (const name of ["ai_ranges", "claims"] as const) {
+    const v = b[name];
+    if (v === undefined || v === null) continue;
+    if (!Array.isArray(v)) p.push(name);
+    else if (!v.every(isObject)) p.push(`${name} entries`);
+  }
+  return p;
+}
+
+async function verifyBundleInner(input: unknown, body?: string): Promise<VerifyResult> {
   const checks: Check[] = [];
+
+  const problems = structuralProblems(input);
+  if (problems.length > 0) {
+    checks.push({
+      name: "Readable as a receipt",
+      ok: false,
+      detail: `not shaped like a receipt: ${problems.join(", ")}`,
+    });
+    return { ok: false, checks, fingerprint: "" };
+  }
+  const b = input as Bundle;
 
   checks.push({ name: "Schema recognised", ok: b.schema === SCHEMA });
 
@@ -243,6 +342,13 @@ export async function verifyBundle(b: Bundle, body?: string): Promise<VerifyResu
     if (r?.when !== undefined && r.when !== null && !isCanonicalTime(r.when)) {
       wireProblems.push(`ai_ranges[${i}].when`);
     }
+  }
+  // Go refuses a non-canonical credential.created_at at parse, so this
+  // side has to as well, or a credential with an offset timestamp passes
+  // here and fails there.
+  const createdAt = (b.credential as Record<string, unknown> | undefined)?.created_at;
+  if (createdAt !== undefined && !isCanonicalTime(createdAt)) {
+    wireProblems.push("credential.created_at");
   }
   for (const [label, sig] of [
     ["signature", b.signature],

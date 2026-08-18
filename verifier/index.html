@@ -18,7 +18,7 @@
     <meta property="og:title" content="Receipts of thought" />
     <meta
       property="og:description"
-      content="A verifiable record of how a piece of writing was actually made. Drop a receipt and check it in your browser, no server involved."
+      content="A signed, tamper-evident account of how a piece of writing was made. Drop a receipt and check it in your browser, no server involved."
     />
     <meta property="og:image" content="https://receiptsofthought.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
@@ -29,7 +29,7 @@
     <meta name="twitter:title" content="Receipts of thought" />
     <meta
       name="twitter:description"
-      content="A verifiable record of how a piece of writing was actually made. Check one in your browser, no server involved."
+      content="A signed, tamper-evident account of how a piece of writing was made. Check one in your browser, no server involved."
     />
     <meta name="twitter:image" content="https://receiptsofthought.com/og-image.png" />
 
@@ -51,43 +51,6 @@
               "name": "Ad Astra Computing",
               "url": "https://receiptsofthought.com/"
             }
-          },
-          {
-            "@type": "FAQPage",
-            "mainEntity": [
-              {
-                "@type": "Question",
-                "name": "What is a receipt of thought?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "A signed, tamper-evident record of how a piece of writing was made: the composition timeline, the passages the author disclosed as AI-written, the claims they sourced, and an embedded C2PA-aligned content credential. It travels with the writing as one .receipts.json file."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Does a receipt prove a human wrote the text?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "No, and it does not claim to. A receipt proves nothing was altered after signing and that the disclosed record is the one that was signed. It cannot prove who holds the signing key, that the timeline reflects honest work, or that undisclosed text is human-written. Disclosure is the author's choice."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "How do you verify a receipt?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Drop the .receipts.json file onto receiptsofthought.com. Verification runs entirely in the browser using WebCrypto, so the file is never uploaded and no server is involved. You can also read the specification and run your own verifier, or host this one yourself."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Is the format open?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Yes. The receipts format specification, the Ed25519 signing scheme, the Go module and this client-side verifier are Apache-2.0, so anyone can reimplement a producer or a verifier, and can check a receipt without using or trusting Folio. Folio, the desktop writing app that produces receipts, is proprietary."
-                }
-              }
-            ]
           },
           {
             "@type": "SoftwareApplication",
@@ -165,9 +128,10 @@
         </p>
         <p>
           Folio keeps that record as you write, then signs it. Not to prove
-          you did nothing wrong, which is an unwinnable game, but to show how
-          the piece was actually made. Receipts of thought, not proof of
-          innocence. The record is the asset.
+          you did nothing wrong, which is an unwinnable game, but to put an
+          account of how the piece was made on the record, where changing it
+          later is detectable. Receipts of thought, not proof of innocence.
+          The record is the asset.
         </p>
         <p>
           It is for anyone whose work is doubted by default. Writers whose

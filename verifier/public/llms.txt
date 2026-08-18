@@ -1,6 +1,6 @@
 # Receipts of thought
 
-> A receipt of thought is a signed, tamper-evident record of how a piece of writing was actually made: the composition timeline, the passages an author discloses as AI-written, the claims they sourced and an embedded content credential. Anyone can verify one in a browser at receiptsofthought.com, with no server involved. The format and its verifier are open source under Apache-2.0.
+> A receipt of thought is a signed, tamper-evident account of how a piece of writing was made, as presented by its author: the composition timeline, the passages an author discloses as AI-written, the claims they sourced and an embedded content credential. Anyone can verify one in a browser at receiptsofthought.com, with no server involved. The format and its verifier are open source under Apache-2.0.
 
 When text is cheap to generate, a clean final draft is no longer evidence that someone thought. What stays scarce is the record of the work itself. A receipt makes that record verifiable: tampering after signing is detectable, and the check runs entirely client-side so nothing you drop leaves your machine.
 

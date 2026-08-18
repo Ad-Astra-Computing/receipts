@@ -16,7 +16,7 @@ signs them as a unit:
 1. A reference to the published body: its title, its canonical URL and
    the SHA-256 of its bytes.
 2. A C2PA-aligned content credential, itself signed, binding the same
-   author identity to the same body.
+   signing key to the same body.
 3. The AI-authored spans the author chose to disclose, as character
    ranges with an optional model name and timestamp.
 4. The factual claims the author sourced, as an excerpt, a source URL
@@ -205,7 +205,7 @@ personal publishers have no certificate authority, while a self-anchored
 public key fingerprint is verifiable by any reader with nothing but a
 SHA-256 and an Ed25519 primitive.
 
-The two signatures share one author identity. The same Ed25519 key that
+The two signatures share one key. The same Ed25519 key that
 signs the outer bundle signs the embedded credential, so a verifier
 that trusts the author's key trusts both at once, and a reader sees a
 single fingerprint.
@@ -271,7 +271,7 @@ A conforming verifier MUST, in order:
    b. Check the credential's bindings to the outer bundle:
       `credential.asset.sha256` MUST equal `post.sha256`, and
       `credential.signature.public_key` MUST equal
-      `signature.public_key` (one author identity signs both). Where the
+      `signature.public_key` (one key signs both). Where the
       credential declares an asset `size` or `mime` and the outer bundle
       carries the same field, they MUST agree; where the outer bundle has
       no such field, the verifier makes no comparison and invents no
@@ -292,7 +292,10 @@ checks. Every input it needs is in the bundle and, optionally, the body.
 A valid bundle proves that the described process, credential and body
 have not been altered since they were signed by the named key, and that
 they are consistent with one another. That is a claim about tamper
-evidence and about one author identity.
+evidence and about the continuity of one embedded key. It is not a claim
+about who holds that key: this format defines no mechanism binding a key
+to a person, and a verifier that reports one is reporting something this
+specification does not establish.
 
 It does not prove that a human, rather than an automated pipeline, sat
 at the keyboard. No signing tool can prove intent. The value of the

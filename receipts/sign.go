@@ -104,11 +104,11 @@ func Verify(b Bundle) error {
 	if !wholeSecondUTC(b.Generated) {
 		return errors.New("receipts: generated is not a whole-second UTC timestamp")
 	}
-	pub, err := base64.RawURLEncoding.DecodeString(b.Signature.PublicKey)
+	pub, err := base64.RawURLEncoding.Strict().DecodeString(b.Signature.PublicKey)
 	if err != nil || len(pub) != ed25519.PublicKeySize {
 		return errors.New("receipts: bad public key")
 	}
-	sig, err := base64.RawURLEncoding.DecodeString(b.Signature.Value)
+	sig, err := base64.RawURLEncoding.Strict().DecodeString(b.Signature.Value)
 	if err != nil || len(sig) != ed25519.SignatureSize {
 		return errors.New("receipts: bad signature value")
 	}

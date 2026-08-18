@@ -30,7 +30,9 @@ still agree.
 
 Abbreviated, with hashes and signatures cut short. This is the shape of
 [`verifier/public/sample.receipts.json`](verifier/public/sample.receipts.json),
-which is a real signed bundle you can drop on the verifier:
+which you can drop on the verifier. Its signatures are genuine, so every
+check really runs; its timeline is a constructed demonstration rather
+than a recorded writing session.
 
 ```json
 {
@@ -101,8 +103,8 @@ which is a real signed bundle you can drop on the verifier:
 ```
 
 Note what is not there: no draft text. The timeline carries counts and a
-hash per checkpoint, never the words, so a receipt discloses that the
-piece was written over fourteen sittings without disclosing any sitting.
+hash per checkpoint, never the words, so a receipt can show fourteen
+checkpoints of work without revealing what was written at any of them.
 
 All of it is signed as one unit with a single Ed25519 key. The format
 version is `folio.receipts/1`. Breaking changes carry a new schema
@@ -189,8 +191,9 @@ published body have not changed since the named key signed them, and that
 they agree with one another.
 
 It does not prove that a human, rather than a pipeline, wrote the piece.
-No signing tool can prove intent. The honest claim is tamper evidence
-plus one author identity, checkable by anyone, trusting no server.
+No signing tool can prove intent. It also does not say whose key signed
+it: the honest claim is tamper evidence plus continuity of one embedded
+signing key, checkable by anyone, trusting no server.
 Section 9 of [`SPEC.md`](SPEC.md) states this in full.
 
 ## Why the code is here

@@ -25,6 +25,13 @@ function encodeNumber(n: number): string {
   if (!Number.isFinite(n)) {
     throw new Error("jcs: non-finite number");
   }
+  // Go rejects fractional and unsafe integers here (c2pa/jcs.go), so a
+  // credential containing 1.5, or an integer beyond 2^53, would be
+  // canonicalized by one implementation and refused by the other, and
+  // the same bytes would get two verdicts.
+  if (!Number.isSafeInteger(n)) {
+    throw new Error(`jcs: ${n} is not a safe integer; this profile canonicalizes integers only`);
+  }
   // The credential uses only safe integers (sizes, counts, offsets).
   // JSON.stringify renders these in canonical decimal form with no
   // leading zeros and no plus sign, matching JCS for integer values.

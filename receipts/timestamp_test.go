@@ -89,3 +89,38 @@ func mustJSON(t *testing.T, s string) string {
 	}
 	return string(b)
 }
+
+// ai_ranges[].when is optional, but when it is there it is signed, and
+// the TypeScript verifier refuses non-canonical spellings. Accepting one
+// here would mean the same bundle verifies in one implementation and
+// fails in the other, which is the failure this whole file exists to
+// prevent.
+func TestAIRangeRejectsNonCanonicalWhen(t *testing.T) {
+	for _, when := range []string{
+		"2026-01-01T05:00:00+05:00",
+		"2026-01-01T00:00:00.5Z",
+		"2026-01-01T00:00:00+00:00",
+	} {
+		var r AIRange
+		body := `{"from":1,"to":2,"when":` + mustJSON(t, when) + `}`
+		if err := json.Unmarshal([]byte(body), &r); err == nil {
+			t.Errorf("accepted non-canonical when %q", when)
+		}
+	}
+}
+
+func TestAIRangeAcceptsCanonicalOrAbsentWhen(t *testing.T) {
+	for _, body := range []string{
+		`{"from":1,"to":2}`,
+		`{"from":1,"to":2,"when":"2026-01-01T00:00:00Z"}`,
+		`{"from":1,"to":2,"model":"m","when":"2026-01-01T00:00:00Z"}`,
+	} {
+		var r AIRange
+		if err := json.Unmarshal([]byte(body), &r); err != nil {
+			t.Errorf("rejected %s: %v", body, err)
+		}
+		if r.From != 1 || r.To != 2 {
+			t.Errorf("fields lost for %s: %+v", body, r)
+		}
+	}
+}

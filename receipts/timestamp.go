@@ -66,6 +66,29 @@ func (c *Checkpoint) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// UnmarshalJSON refuses an ai_range whose `when` is not canonical. It is
+// optional, but when present it is signed (section 6 hashes it as a
+// rendered string), and the TypeScript verifier refuses non-canonical
+// forms, so accepting one here would split the two implementations.
+func (r *AIRange) UnmarshalJSON(data []byte) error {
+	var w struct {
+		From  int    `json:"from"`
+		To    int    `json:"to"`
+		Model string `json:"model"`
+		When  string `json:"when"`
+	}
+	if err := json.Unmarshal(data, &w); err != nil {
+		return err
+	}
+	if w.When != "" {
+		if _, err := canonicalTimestamp(w.When); err != nil {
+			return fmt.Errorf("ai_range: %w", err)
+		}
+	}
+	r.From, r.To, r.Model, r.When = w.From, w.To, w.Model, w.When
+	return nil
+}
+
 // UnmarshalJSON refuses a bundle whose `generated` is not canonical, for
 // the same reason: section 6 hashes it as a rendered string.
 func (b *Bundle) UnmarshalJSON(data []byte) error {
