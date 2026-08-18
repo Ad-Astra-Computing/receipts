@@ -83,6 +83,7 @@
             go
             nodejs_22
             git
+            gitleaks
           ];
           shellHook = ''
             echo "receipts dev shell (go $(go version | cut -d\" \" -f3), node $(node --version))"
