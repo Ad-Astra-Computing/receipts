@@ -259,9 +259,38 @@ function tapeBody(body: string, ranges: { from: number; to: number }[], ellipsis
   return wrap;
 }
 
+/** Whether the shape this renderer reads is actually present. */
+function isRenderable(b: unknown): b is Bundle {
+  if (typeof b !== "object" || b === null) return false;
+  const o = b as Record<string, unknown>;
+  const post = o.post as Record<string, unknown> | undefined;
+  const timeline = o.timeline as Record<string, unknown> | undefined;
+  return (
+    typeof post === "object" && post !== null &&
+    typeof timeline === "object" && timeline !== null &&
+    Array.isArray(timeline.checkpoints)
+  );
+}
+
 export function renderReceipt(inner: HTMLElement, bundle: Bundle, body: string | undefined, res: VerifyResult) {
   inner.replaceChildren(); // DOM/text-only: never innerHTML with bundle content
   inner.classList.toggle("failed", !res.ok);
+
+  // verifyBundle is total over any input, but this is not: it reads
+  // bundle.post.title and bundle.timeline directly, so a document that
+  // failed the structural checks would throw here and break the page,
+  // which is the outcome making verification total was meant to prevent.
+  // A document that is not shaped like a receipt has nothing to render
+  // beyond why it was refused.
+  if (!isRenderable(bundle)) {
+    const head = el("div", "r-head");
+    head.append(el("div", "r-title", "Not a receipt"));
+    inner.append(head);
+    for (const c of res.checks.filter((c) => !c.ok)) {
+      inner.append(el("div", "r-check fail", `${c.name}: ${c.detail ?? "failed"}`));
+    }
+    return;
+  }
 
   // Title + fingerprint (ledger header)
   const head = el("div", "r-head");

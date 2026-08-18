@@ -19,7 +19,7 @@ func TestBundleRejectsUnknownMembers(t *testing.T) {
 		"at the top level":   `{"schema":"folio.receipts/1","generated":"2026-01-01T00:00:00Z","surprise":1}`,
 		"inside post":        `{"schema":"folio.receipts/1","generated":"2026-01-01T00:00:00Z","post":{"title":"t","surprise":1}}`,
 		"inside timeline":    `{"schema":"folio.receipts/1","generated":"2026-01-01T00:00:00Z","timeline":{"checkpoints":[],"surprise":1}}`,
-		"inside checkpoint":  `{"schema":"folio.receipts/1","generated":"2026-01-01T00:00:00Z","timeline":{"checkpoints":[{"at":"2026-01-01T00:00:00Z","words":1,"chars":1,"hash":"h","surprise":1}]}}`,
+		"inside checkpoint":  `{"schema":"folio.receipts/1","generated":"2026-01-01T00:00:00Z","timeline":{"checkpoints":[{"at":"2026-01-01T00:00:00Z","words":1,"chars":1,"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","surprise":1}]}}`,
 		"inside an ai range": `{"schema":"folio.receipts/1","generated":"2026-01-01T00:00:00Z","ai_ranges":[{"from":1,"to":2,"surprise":1}]}`,
 		"inside signature":   `{"schema":"folio.receipts/1","generated":"2026-01-01T00:00:00Z","signature":{"alg":"Ed25519","surprise":1}}`,
 	} {
@@ -41,7 +41,7 @@ func TestBundleAcceptsTheFieldsItDefines(t *testing.T) {
 	  "post":{"title":"t","url":"https://example.com","sha256":"abc"},
 	  "ai_ranges":[{"from":1,"to":2,"model":"m","when":"2026-01-01T00:00:00Z"}],
 	  "claims":[{"excerpt":"e","source_url":"https://example.org","status":"supported"}],
-	  "timeline":{"checkpoints":[{"at":"2026-01-01T00:00:00Z","words":1,"chars":1,"hash":"h"}],"chain_hash":"c"},
+	  "timeline":{"checkpoints":[{"at":"2026-01-01T00:00:00Z","words":1,"chars":1,"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}],"chain_hash":"c"},
 	  "signature":{"alg":"Ed25519","public_key":"k","value":"v"}}`
 	var b Bundle
 	if err := json.Unmarshal([]byte(body), &b); err != nil {

@@ -103,6 +103,9 @@ func Verify(b Bundle) error {
 	if b.Timeline.Checkpoints == nil {
 		return errors.New("receipts: timeline.checkpoints is missing")
 	}
+	if err := validateSemantics(b); err != nil {
+		return err
+	}
 	if b.Schema != Schema {
 		return fmt.Errorf("receipts: unknown schema %q", b.Schema)
 	}
@@ -147,4 +150,76 @@ func VerifyBody(b Bundle, body []byte) error {
 		return errors.New("receipts: body does not match bundle hash")
 	}
 	return nil
+}
+
+// validateSemantics enforces the rules of SPEC sections 3.1 and 3.2 that
+// are about values rather than shape.
+//
+// The TypeScript verifier checks these at parse; this side did not, so a
+// bundle with a negative word count or an inverted AI range verified in
+// Go and failed in the browser. A specification that states a rule which
+// only one implementation applies is worse than one that stays silent,
+// because an implementer reads it and believes it.
+func validateSemantics(b Bundle) error {
+	for i, cp := range b.Timeline.Checkpoints {
+		if cp.Words < 0 {
+			return fmt.Errorf("receipts: timeline.checkpoints[%d].words is negative", i)
+		}
+		if cp.Chars < 0 {
+			return fmt.Errorf("receipts: timeline.checkpoints[%d].chars is negative", i)
+		}
+		if !isSHA256Hex(cp.Hash) {
+			return fmt.Errorf("receipts: timeline.checkpoints[%d].hash is not 64 lowercase hex characters", i)
+		}
+	}
+	for i, r := range b.AIRanges {
+		if r.From < 0 {
+			return fmt.Errorf("receipts: ai_ranges[%d].from is negative", i)
+		}
+		if r.To <= r.From {
+			return fmt.Errorf("receipts: ai_ranges[%d] ends at or before it starts", i)
+		}
+	}
+	for i, c := range b.Claims {
+		if c.Excerpt == "" {
+			return fmt.Errorf("receipts: claims[%d].excerpt is empty", i)
+		}
+		if c.SourceURL == "" {
+			return fmt.Errorf("receipts: claims[%d].source_url is empty", i)
+		}
+	}
+	// Counts are hashed into the chain and offsets index a body, so both
+	// must survive a round trip through a JSON number in any language.
+	// Go's int is wider than that; refusing here keeps a bundle Go signs
+	// verifiable everywhere.
+	for i, cp := range b.Timeline.Checkpoints {
+		if !isSafeInteger(cp.Words) || !isSafeInteger(cp.Chars) {
+			return fmt.Errorf("receipts: timeline.checkpoints[%d] has a count outside the safe integer range", i)
+		}
+	}
+	for i, r := range b.AIRanges {
+		if !isSafeInteger(r.From) || !isSafeInteger(r.To) {
+			return fmt.Errorf("receipts: ai_ranges[%d] has an offset outside the safe integer range", i)
+		}
+	}
+	return nil
+}
+
+// maxSafeInteger is 2^53-1: the largest integer every JSON
+// implementation reproduces exactly (SPEC section 4).
+const maxSafeInteger = 1<<53 - 1
+
+func isSafeInteger(n int) bool { return n >= -maxSafeInteger && n <= maxSafeInteger }
+
+// isSHA256Hex reports whether h is exactly 64 lowercase hex digits.
+func isSHA256Hex(h string) bool {
+	if len(h) != 64 {
+		return false
+	}
+	for _, c := range h {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
 }

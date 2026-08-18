@@ -36,7 +36,11 @@ async function show(bundle: Bundle, body: string | undefined, animate: boolean, 
 
 function extract(data: unknown): { bundle: Bundle; body?: string } {
   const d = data as { bundle?: Bundle; body?: string } & Bundle;
-  return { bundle: (d.bundle ?? d) as Bundle, body: d.body };
+  // A transport envelope carries the published text (SPEC 3a). Anything
+  // other than a string is not that, and passing it on would hash
+  // whatever it happens to stringify as.
+  const body = typeof d?.body === "string" ? d.body : undefined;
+  return { bundle: (d?.bundle ?? d) as Bundle, body };
 }
 
 async function loadFile(f: File) {

@@ -241,6 +241,16 @@ Rules:
   say which to the reader, because those are different assurances.
 - `body` is the published text as bytes, decoded as UTF-8.
 
+| Member | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `bundle` | object | yes | A bundle, per section 3. |
+| `body` | string | no | The published text. Absent means no text was supplied, which is not the same as a text that matched. |
+
+An envelope MUST contain no other members. A verifier distinguishes the
+two forms by the presence of `bundle`: a document with a `bundle` member
+is an envelope, and any other object is read as a bare bundle. A bundle
+has no member named `bundle`, so the test is unambiguous.
+
 The envelope is a convenience for demonstration and for readers who
 receive a receipt on its own. A published receipt beside a published post
 does not need it: the reader has the post.
@@ -251,6 +261,11 @@ does not need it: the reader has the post.
 - The public key and signature are base64url without padding
   (RFC 4648 §5, no trailing `=`).
 - All strings are UTF-8. The signing input is built from UTF-8 bytes.
+- Every integer in a bundle MUST lie in the closed range
+  `[-(2^53 - 1), 2^53 - 1]`, the largest range every JSON implementation
+  reproduces exactly. A producer MUST NOT emit an integer outside it, and
+  a verifier MUST reject one, because a number a language rounds is a
+  number two verifiers will hash differently.
 - `ai_ranges[].from` and `.to` are UTF-8 **byte** offsets into the
   published body, half-open: `[from, to)`. Bytes, not characters and not
   UTF-16 code units, because a byte offset is the one position every
