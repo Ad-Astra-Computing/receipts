@@ -46,6 +46,11 @@ type PostRef struct {
 
 // AIRange is one disclosed AI-authored span.
 type AIRange struct {
+	// From and To are UTF-8 BYTE offsets into the published body,
+	// half-open, per SPEC section 4. Go strings are byte-indexed so
+	// body[From:To] is correct here; a verifier written in a language
+	// with UTF-16 or code-point indexing has to convert, and getting it
+	// wrong is silent until the text leaves ASCII.
 	From  int    `json:"from"`
 	To    int    `json:"to"`
 	Model string `json:"model,omitempty"`
@@ -64,8 +69,9 @@ type ClaimRef struct {
 type Checkpoint struct {
 	At    time.Time `json:"at"`
 	Words int       `json:"words"`
-	Chars int       `json:"chars"`
-	Hash  string    `json:"hash"`
+	// Chars counts Unicode code points, per SPEC section 4.
+	Chars int    `json:"chars"`
+	Hash  string `json:"hash"`
 }
 
 // TimelineDigest is the privacy-preserving process record.

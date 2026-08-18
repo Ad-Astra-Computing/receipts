@@ -30,6 +30,59 @@ function safeHttp(url: string): string | null {
 // the percentage and the in-place highlighting build on this, so
 // overlapping or out-of-bounds ranges can neither inflate the percent
 // past 100 nor duplicate/reorder the displayed body.
+/**
+ * Converts UTF-8 byte offsets into JavaScript string indices.
+ *
+ * SPEC section 4: ai_ranges are byte offsets into the published body,
+ * because a byte offset is the one position every language can agree on
+ * without a table. JavaScript indexes strings in UTF-16 code units, so
+ * the two only coincide for ASCII. An accented letter costs one extra
+ * byte, an emoji three, and using the raw numbers moves the highlight
+ * left by exactly that much: wrong words, marked confidently, and only
+ * for text that is not plain English.
+ *
+ * Offsets that land inside a character (a corrupt or hostile bundle)
+ * snap to the character boundary rather than splitting it.
+ */
+export function byteRangesToStringRanges(
+  body: string,
+  ranges: { from: number; to: number }[],
+): { from: number; to: number }[] {
+  if (ranges.length === 0) return [];
+  // One walk over the body, recording the string index at each byte
+  // boundary. byteToIndex[b] is the string index of the character that
+  // starts at byte b.
+  const byteToIndex = new Map<number, number>();
+  let byteLen = 0;
+  for (let i = 0; i < body.length; ) {
+    byteToIndex.set(byteLen, i);
+    const cp = body.codePointAt(i) as number;
+    const width = cp > 0xffff ? 2 : 1; // surrogate pair or single unit
+    byteLen += cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+    i += width;
+  }
+  byteToIndex.set(byteLen, body.length);
+
+  const at = (byteOffset: number): number => {
+    if (byteOffset <= 0) return 0;
+    if (byteOffset >= byteLen) return body.length;
+    const hit = byteToIndex.get(byteOffset);
+    if (hit !== undefined) return hit;
+    // Inside a character: snap forward to the next boundary.
+    for (let b = byteOffset + 1; b <= byteLen; b++) {
+      const next = byteToIndex.get(b);
+      if (next !== undefined) return next;
+    }
+    return body.length;
+  };
+
+  return ranges.map((r) => {
+    const from = at(r.from);
+    const to = at(r.to);
+    return { from, to: Math.max(from, to) };
+  });
+}
+
 export function mergeRanges(
   ranges: { from: number; to: number }[],
   bodyLen: number,
@@ -234,7 +287,11 @@ export function renderReceipt(inner: HTMLElement, bundle: Bundle, body: string |
   const ai = bundle.ai_ranges ?? [];
   if (body !== undefined && ai.length > 0) {
     const { prose, offset } = stripFrontmatter(body);
-    const shifted = ai.map((r) => ({ from: r.from - offset, to: r.to - offset }));
+    // Byte offsets first, against the whole body; `offset` is a string
+    // index into it, so subtracting it from bytes mixed two different
+    // units and shifted the marks twice over.
+    const inString = byteRangesToStringRanges(body, ai);
+    const shifted = inString.map((r) => ({ from: r.from - offset, to: r.to - offset }));
     const { text, ellipsis } = excerptProse(prose, Math.max(0, ...shifted.map((r) => r.to)));
     inner.append(tapeBody(text, shifted, ellipsis));
   }

@@ -39,6 +39,9 @@ func NewSnapshot(at time.Time, text string) Snapshot {
 	return Snapshot{
 		At:    at.UTC(),
 		Words: WordCount(text),
+		// Code points, per SPEC section 4: a size the author sees, so it
+		// counts characters. Not to be confused with ai_ranges offsets,
+		// which are byte positions a machine resolves.
 		Chars: utf8.RuneCountInString(text),
 		Hash:  hex.EncodeToString(sum[:]),
 		Text:  text,

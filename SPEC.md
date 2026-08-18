@@ -93,6 +93,17 @@ verifies in one implementation and fails in another.
 - The public key and signature are base64url without padding
   (RFC 4648 §5, no trailing `=`).
 - All strings are UTF-8. The signing input is built from UTF-8 bytes.
+- `ai_ranges[].from` and `.to` are UTF-8 **byte** offsets into the
+  published body, half-open: `[from, to)`. Bytes, not characters and not
+  UTF-16 code units, because a byte offset is the one position every
+  language agrees on without a conversion table. A producer or verifier
+  working in a language whose strings are not byte-indexed MUST convert.
+  Getting this wrong is silent: the offsets still land somewhere, and
+  they only diverge once the text contains a character outside ASCII.
+- `timeline.checkpoints[].chars` counts Unicode **code points**, not
+  bytes and not grapheme clusters. It is a size the author sees, so it
+  counts characters; `ai_ranges` are positions a machine resolves, so
+  they count bytes.
 
 ## 5. The timeline chain
 

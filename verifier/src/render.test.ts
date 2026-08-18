@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, it, expect } from "vitest";
-import { disclosedChars, excerptProse, mergeRanges, stripFrontmatter } from "./render";
+import { byteRangesToStringRanges, disclosedChars, excerptProse, mergeRanges, stripFrontmatter } from "./render";
 
 // Reconstruct the body the way tapeBody does: plain text between the
 // merged intervals, "marked" text inside them. The result must equal
@@ -102,5 +102,53 @@ describe("disclosedChars (AI-disclosed percentage)", () => {
   it("never returns more than the body length", () => {
     const many = Array.from({ length: 50 }, () => ({ from: 0, to: 100 }));
     expect(disclosedChars(many, 100)).toBeLessThanOrEqual(100);
+  });
+});
+
+// ai_ranges are UTF-8 byte offsets into the published body (SPEC section
+// 4). JavaScript strings are indexed in UTF-16 code units, so any
+// non-ASCII character before a range shifts every later index: an accent
+// costs one extra byte, an emoji three. Slicing with the raw numbers
+// highlights the wrong words, and does it silently, only for text that
+// is not plain English.
+describe("byteRangesToStringRanges", () => {
+  const bytes = (s: string) => new TextEncoder().encode(s).length;
+
+  it("maps byte offsets onto string indices when the text is not ASCII", () => {
+    const prefix = "Café ☕ costs €3 — ";
+    const marked = "the model wrote this";
+    const body = prefix + marked + " and then a human continued.";
+    const from = bytes(prefix);
+    const to = from + bytes(marked);
+
+    const [r] = byteRangesToStringRanges(body, [{ from, to }]);
+    expect(body.slice(r.from, r.to)).toBe(marked);
+    // The naive reading is wrong, which is the whole point.
+    expect(body.slice(from, to)).not.toBe(marked);
+  });
+
+  it("handles characters outside the basic plane", () => {
+    const prefix = "A 🧵 thread: ";
+    const marked = "generated sentence";
+    const body = prefix + marked + ".";
+    const from = bytes(prefix);
+    const [r] = byteRangesToStringRanges(body, [{ from, to: from + bytes(marked) }]);
+    expect(body.slice(r.from, r.to)).toBe(marked);
+  });
+
+  it("is the identity for pure ASCII", () => {
+    const body = "plain ascii body text";
+    const [r] = byteRangesToStringRanges(body, [{ from: 6, to: 11 }]);
+    expect(r).toEqual({ from: 6, to: 11 });
+    expect(body.slice(r.from, r.to)).toBe("ascii");
+  });
+
+  it("clamps an offset that lands inside a character rather than splitting it", () => {
+    const body = "é abc";
+    // 1 is inside the two-byte é.
+    const [r] = byteRangesToStringRanges(body, [{ from: 1, to: 3 }]);
+    expect(r.from).toBeGreaterThanOrEqual(0);
+    expect(r.to).toBeLessThanOrEqual(body.length);
+    expect(() => body.slice(r.from, r.to)).not.toThrow();
   });
 });
