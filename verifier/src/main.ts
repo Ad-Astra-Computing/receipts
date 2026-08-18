@@ -2,6 +2,7 @@
 import { verifyBundle, type Bundle } from "./verify";
 import { renderReceipt } from "./render";
 import { jsonTextProblem } from "./jsontext";
+import { tamper, type Tamper } from "./tamper";
 // The hero sample is bundled in, not fetched, so it is instant and
 // cannot fail at the edge. Swap this file to change the demo receipt.
 import sampleData from "./sample.receipts.json";
@@ -105,6 +106,54 @@ function wire() {
   });
 }
 
+/**
+ * The tamper controls. The page claims that changing a receipt after
+ * signing is detectable, and a reader has no reason to take that on
+ * trust, so the buttons make the changes a forger would make and let the
+ * real verifier refuse them here.
+ */
+function wireTamper(bundle: Bundle, body: string | undefined): void {
+  const panel = document.getElementById("tamper");
+  if (!panel) return;
+  panel.hidden = false;
+  const reset = panel.querySelector<HTMLButtonElement>(".tamper-reset");
+  const note = () => document.getElementById("tamper-note");
+
+  const setNote = (text: string | null) => {
+    let el = note();
+    if (!text) {
+      el?.remove();
+      return;
+    }
+    if (!el) {
+      el = document.createElement("p");
+      el.id = "tamper-note";
+      el.className = "tamper-note";
+      el.setAttribute("role", "status");
+      panel.after(el);
+    }
+    el.textContent = text;
+  };
+
+  panel.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-tamper]");
+    if (!btn) return;
+    const kind = btn.dataset.tamper as Tamper | "reset";
+    if (kind === "reset") {
+      if (reset) reset.hidden = true;
+      setNote(null);
+      card().classList.remove("has-file");
+      void show(bundle, body, true);
+      return;
+    }
+    const t = tamper(kind, bundle, body);
+    if (reset) reset.hidden = false;
+    setNote(`${t.note} The receipt no longer verifies.`);
+    card().classList.add("has-file"); // it is no longer the pristine demo
+    void show(t.bundle, t.body, true);
+  });
+}
+
 function main() {
   wire();
   // Auto-verify the bundled sample receipt as the hero.
@@ -115,6 +164,7 @@ function main() {
     painted = true;
     void show(bundle, body, animate);
   };
+  wireTamper(bundle, body);
   // Animate when the hero scrolls into view. Feature-detect first:
   // constructing IntersectionObserver where it is unavailable would
   // throw and leave the hero unpainted.

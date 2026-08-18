@@ -90,11 +90,11 @@
             verifiable record of how it was created.
           </p>
           <p class="hero-copy">
-            Folio keeps that record as you write: a timeline of the
-            composition, the sources behind each claim, and the passages an
-            AI wrote that the author chose to disclose. Publishing produces
-            a portable receipt. This page checks one, in your browser, with
-            no server involved.
+            A receipt is one signed file that travels with a piece of
+            writing: how it was composed, the sources behind its claims,
+            and the passages the author declares an AI wrote. Anyone can
+            check one here, in their own browser, with no account and
+            nothing uploaded. Folio is the writing app that produces them.
           </p>
           <p class="meta">checked in your browser · nothing you drop leaves your machine</p>
         </div>
@@ -121,6 +121,14 @@
           <span class="on-pointer">drop a <code>.receipts.json</code> here, or </span>
           <label for="file" class="browse">browse</label>.
         </p>
+        <div class="tamper" id="tamper" hidden>
+          <span class="tamper-label">Try to break it:</span>
+          <button type="button" class="tamper-btn" data-tamper="body">edit the text</button>
+          <button type="button" class="tamper-btn" data-tamper="timeline">reorder the drafts</button>
+          <button type="button" class="tamper-btn" data-tamper="range">move an AI label</button>
+          <button type="button" class="tamper-btn" data-tamper="signature">swap the signature</button>
+          <button type="button" class="tamper-btn tamper-reset" data-tamper="reset" hidden>put it back</button>
+        </div>
         </div>
       </section>
 

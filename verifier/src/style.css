@@ -440,3 +440,49 @@ footer .fine { font-size: var(--fs--2); }
   color: var(--bone-0);
   font-weight: 500;
 }
+
+/* Try to break it. The controls sit under the receipt because they act
+   on it, and they are quiet: this is an invitation, not the page's main
+   action, which is still verifying a receipt of your own. */
+.tamper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s0) var(--s1);
+  margin-top: var(--s1);
+}
+.tamper-label {
+  color: var(--bone-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs--1);
+}
+.tamper-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bone-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs--1);
+  cursor: pointer;
+  transition:
+    color var(--motion, 140ms) ease,
+    border-color var(--motion, 140ms) ease;
+}
+.tamper-btn:hover {
+  color: var(--paper-ink, var(--bone-0));
+  border-color: var(--bone-2);
+}
+.tamper-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.tamper-reset {
+  border-style: dashed;
+}
+.tamper-note {
+  margin: var(--s0) 0 0;
+  color: var(--bone-1);
+  font-size: var(--fs--1);
+  max-width: 56ch;
+}
