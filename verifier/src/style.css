@@ -411,33 +411,32 @@ footer .fine { font-size: var(--fs--2); }
 .receipt-inner[aria-busy="true"] { opacity: 0.55; }
 
 
-/* The version-history comparison. It answers the first question most
-   readers have, and it is written for a teacher rather than an
-   implementer, so it is set as prose rather than in the mono of the
-   anatomy tables. */
-.compared {
+/* Questions readers actually ask, answered in plain words rather than in
+   the mono of the anatomy tables. One column: these are answers to read,
+   not fields to scan, and a two-column grid would pair unrelated ones
+   side by side. */
+.faq {
   display: grid;
-  gap: var(--s2);
+  gap: var(--s3);
   margin: var(--s2) 0 0;
 }
-.compared dt {
+.faq dt {
   font-family: var(--font-serif);
   font-size: var(--fs-1);
   color: var(--bone-0);
 }
-.compared dd {
-  margin: 4px 0 0;
+.faq dd {
+  margin: var(--s1) 0 0;
   color: var(--bone-1);
-  max-width: 62ch;
+  max-width: 68ch;
 }
-.compared-limit {
-  margin-top: var(--s3);
-  padding-top: var(--s2);
-  border-top: 1px solid var(--hairline);
-  color: var(--bone-1);
-  max-width: 62ch;
+.faq dd p {
+  margin: 0 0 var(--s1);
 }
-
-@media (min-width: 61.8em) {
-  .compared { grid-template-columns: 1fr 1fr; gap: var(--s3) var(--s4); }
+.faq dd p:last-child {
+  margin-bottom: 0;
+}
+.faq dd strong {
+  color: var(--bone-0);
+  font-weight: 500;
 }
