@@ -11,8 +11,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "check": "tsc --noEmit",
-    "deploy": "wrangler pages deploy dist --project-name=receiptsofthought --branch=main"
+    "check": "tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

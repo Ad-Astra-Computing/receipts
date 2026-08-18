@@ -54,11 +54,11 @@
           },
           {
             "@type": "SoftwareApplication",
-            "name": "Folio",
+            "name": "Folio Web",
             "applicationCategory": "Text editor",
-            "operatingSystem": "macOS, Linux",
-            "url": "https://github.com/Ad-Astra-Computing/folio",
-            "description": "A desktop writing app that keeps a signed, tamper-evident record of how a piece was composed and emits a portable receipt on publication.",
+            "operatingSystem": "Any modern web browser",
+            "url": "https://web.receiptsofthought.com",
+            "description": "A browser writing app that keeps a signed, tamper-evident record of how a piece was composed and emits a portable receipt on publication.",
             "publisher": { "@type": "Organization", "name": "Ad Astra Computing" }
           }
         ]
@@ -89,15 +89,17 @@
             verifiable record of how it was created.
           </p>
           <p class="hero-copy">
-            Folio is a desktop writing app that keeps that record as you
-            write: a timeline of the composition, the sources behind each
-            claim, the passages an AI wrote that the author chose to
-            disclose. Publishing produces a portable receipt. This page
-            checks one, in your browser, with no server involved.
+            Folio keeps that record as you write: a timeline of the
+            composition, the sources behind each claim, and the passages an
+            AI wrote that the author chose to disclose. Publishing produces
+            a portable receipt. This page checks one, in your browser, with
+            no server involved.
           </p>
-          <p class="meta">checked in your browser · no server · nothing you drop leaves your machine</p>
+          <p class="meta">checked in your browser · nothing you drop leaves your machine</p>
         </div>
 
+        <div class="verifier">
+          <p class="drop-lede" id="drop-lede">Drop a receipt here, or choose a file</p>
         <label class="receipt dropzone" for="file" id="receipt-card">
           <input
             id="file"
@@ -107,7 +109,9 @@
             aria-describedby="drop-hint"
           />
           <div class="playhead" aria-hidden="true"></div>
-          <div class="receipt-inner" id="receipt-inner">
+          <span class="demo-badge" id="demo-badge">Demo receipt</span>
+          <span class="drop-overlay" aria-hidden="true">Drop to verify</span>
+          <div class="receipt-inner" id="receipt-inner" aria-busy="false">
             <!-- rendered by render.ts -->
           </div>
         </label>
@@ -116,6 +120,7 @@
           <span class="on-pointer">drop a <code>.receipts.json</code> here, or </span>
           <label for="file" class="browse">browse</label>.
         </p>
+        </div>
       </section>
 
       <section id="thesis" aria-labelledby="thesis-h">
@@ -228,9 +233,18 @@
             <rect x="40" y="116" width="124" height="32" />
           </g>
         </svg>
-        <h2 id="folio-h">Write in Folio<span class="dot">.</span></h2>
-        <p>A desktop writing desk that keeps the receipts. Mac and Linux.</p>
-        <a class="folio-link" href="https://github.com/Ad-Astra-Computing/folio">Get Folio</a>
+        <div class="cta-copy">
+          <h2 id="folio-h">Write in Folio<span class="dot">.</span></h2>
+          <p>
+            A writing desk that keeps the receipts. Folio Web runs in your
+            browser today. The desktop app for Mac and Linux is still being
+            built.
+          </p>
+        </div>
+        <div class="cta-actions">
+          <a class="folio-link" href="https://web.receiptsofthought.com">Open Folio Web</a>
+          <p class="folio-status">Folio for Mac and Linux: coming soon</p>
+        </div>
       </section>
     </main>
 
