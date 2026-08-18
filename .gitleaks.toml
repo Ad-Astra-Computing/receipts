@@ -1,0 +1,26 @@
+title = "Receipts of Thought gitleaks config"
+
+# Inherit gitleaks' default ruleset (AWS, GitHub, GitLab, Stripe, generic
+# API keys, JWTs, private-key PEMs, etc.). Without this, the scan would only
+# catch the custom rule below and pass silently on every other secret class.
+[extend]
+useDefault = true
+
+# The signing scheme's domain-separation tags are string constants that MUST
+# be published: a verifier cannot check a signature without them, and they are
+# specified in SPEC.md. The generic-api-key rule trips on their entropy.
+# Suppress ONLY that rule on the files that declare them, so a real secret in
+# the same file would still be caught.
+[[allowlists]]
+description = "Published domain-separation tags, generic-api-key only"
+targetRules = ["generic-api-key"]
+paths = [
+  '''c2pa/c2pa\.go$''',
+  '''receipts/.*\.go$''',
+]
+
+[[rules]]
+id = "cloudflare-api-token"
+description = "Cloudflare API token"
+regex = '''\bcfat_[A-Za-z0-9]{40,}'''
+keywords = ["cfat_"]
