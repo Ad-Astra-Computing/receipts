@@ -133,6 +133,13 @@ npm run dev       # local page; drop a .receipts.json bundle onto it
 npm run build     # static output in dist/
 ```
 
+Deploying receiptsofthought.com is `npm run build && npm run deploy`
+from `verifier/`, with `CLOUDFLARE_API_TOKEN` in the environment. It is
+a Cloudflare Pages project named `receiptsofthought`; `public/_headers`
+carries the content security policy, including the `connect-src 'none'`
+that makes the no-network promise something the browser enforces rather
+than something we assert.
+
 With Nix, and without installing a toolchain at all:
 
 ```sh
