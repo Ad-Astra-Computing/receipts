@@ -66,11 +66,11 @@ func TestCheckpointAcceptsCanonicalTimestamp(t *testing.T) {
 func TestChainHashesTheWireTimestamp(t *testing.T) {
 	const at = "2026-01-01T00:00:00Z"
 	var cp Checkpoint
-	if err := json.Unmarshal([]byte(`{"at":"`+at+`","words":1,"chars":1,"hash":"h"}`), &cp); err != nil {
+	if err := json.Unmarshal([]byte(`{"at":"`+at+`","words":1,"chars":1,"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}`), &cp); err != nil {
 		t.Fatal(err)
 	}
 	got := ChainCheckpoint("", cp)
-	want := sha256HexOf("" + "|" + at + "|1|1|h")
+	want := sha256HexOf("" + "|" + at + "|1|1|aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	if got != want {
 		t.Fatalf("chain hashed something other than the wire timestamp:\n got %s\nwant %s", got, want)
 	}

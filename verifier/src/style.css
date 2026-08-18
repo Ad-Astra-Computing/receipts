@@ -276,7 +276,31 @@ section p { max-width: var(--measure); color: var(--bone-1); margin: 0 0 var(--s
 .ledger th { color: var(--bone-2); font-weight: 500; font-family: var(--font-mono); font-size: var(--fs--2); text-transform: uppercase; letter-spacing: 0.06em; }
 .ledger td:last-child { font-family: var(--font-mono); color: var(--bone-2); }
 
-.cta { text-align: left; }
+/* Folio region: words lead, the action sits beside them. Stacked on a
+   phone, split on the golden ratio at the desktop breakpoint. */
+.cta {
+  display: grid;
+  gap: var(--s3);
+  padding-top: var(--s3);
+  padding-bottom: var(--s3);
+  text-align: left;
+  align-items: center;
+}
+.cta-copy > h2 { margin: 0; }
+.cta-copy > .folio-mark { margin: 0 0 var(--s1); }
+.cta-copy > p { margin: var(--s1) 0 0; color: var(--bone-1); max-width: 38ch; }
+.cta-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s1);
+}
+.folio-status {
+  margin: 0;
+  color: var(--bone-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs--1);
+}
 .folio-link {
   display: inline-block; margin-top: var(--s1);
   padding: var(--s0) var(--s2); border: 1px solid var(--bone-1);
@@ -303,7 +327,7 @@ footer .fine { font-size: var(--fs--2); }
     align-items: center;
     text-align: left;
   }
-  .cta-actions { align-items: flex-start; }
+  .cta-actions { align-items: flex-end; text-align: right; }
   #hero-h { font-size: var(--fs-3); }
   #anatomy { }
   .anatomy { grid-template-columns: 1fr 1fr; gap: var(--s3) var(--s4); }
@@ -386,16 +410,3 @@ footer .fine { font-size: var(--fs--2); }
    verdict staying put reads as "nothing happened". */
 .receipt-inner[aria-busy="true"] { opacity: 0.55; }
 
-.cta { display: grid; gap: var(--s3); }
-.cta-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--s1);
-}
-.folio-status {
-  margin: 0;
-  color: var(--bone-2);
-  font-family: var(--font-mono);
-  font-size: var(--fs--1);
-}
