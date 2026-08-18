@@ -343,28 +343,108 @@ function credentialShapeProblem(c: unknown): string | null {
 }
 
 /**
- * Names the structural problems that stop verification being meaningful.
- * Empty means the document has the shape the format defines, so the
- * cryptographic checks below are checking something real.
+ * Names every way a document fails the wire rules in SPEC sections 3
+ * and 4, before anything is hashed. Empty means the document has the
+ * shape and the types the format defines.
+ *
+ * TypeScript interfaces are erased at runtime, so without this the
+ * verifier trusted its own type annotations against a file written by a
+ * stranger: a number where a string belongs reached string
+ * interpolation, a boolean reached TextEncoder, and Go, whose decoder is
+ * typed, refused the same document. Every rule here has a counterpart in
+ * the Go decoder.
  */
 function structuralProblems(b: unknown): string[] {
   if (!isObject(b)) return ["the file is not a JSON object"];
   const p: string[] = [];
-  if (!isObject(b.post)) p.push("post");
-  if (!isObject(b.credential)) p.push("credential");
-  if (!isObject(b.signature)) p.push("signature");
+
+  const str = (v: unknown, name: string, required = false) => {
+    if (v === undefined || v === null) {
+      if (required) p.push(`${name} is missing`);
+      return;
+    }
+    if (typeof v !== "string") p.push(`${name} is not a string`);
+  };
+  const int = (v: unknown, name: string, required = false) => {
+    if (v === undefined || v === null) {
+      if (required) p.push(`${name} is missing`);
+      return;
+    }
+    if (typeof v !== "number" || !Number.isSafeInteger(v)) {
+      p.push(`${name} is not a safe integer`);
+    } else if (v < 0) {
+      p.push(`${name} is negative`);
+    }
+  };
+
+  str(b.schema, "schema", true);
+  str(b.generated, "generated", true);
+
+  if (!isObject(b.post)) p.push("post is missing");
+  else {
+    str(b.post.title, "post.title");
+    str(b.post.url, "post.url");
+    str(b.post.sha256, "post.sha256", true);
+  }
+
+  if (!isObject(b.credential)) p.push("credential is missing");
+  if (!isObject(b.signature)) p.push("signature is missing");
+  else {
+    str(b.signature.alg, "signature.alg", true);
+    str(b.signature.public_key, "signature.public_key", true);
+    str(b.signature.value, "signature.value", true);
+  }
+
+  // A missing timeline is not an empty timeline. Go used to verify one
+  // because an empty chain hashes to the empty string; a receipt with no
+  // record of composition is not a receipt.
   if (!isObject(b.timeline)) {
-    p.push("timeline");
+    p.push("timeline is missing");
   } else {
     const cps = (b.timeline as Record<string, unknown>).checkpoints;
-    if (!Array.isArray(cps)) p.push("timeline.checkpoints");
-    else if (!cps.every(isObject)) p.push("timeline.checkpoints entries");
+    str((b.timeline as Record<string, unknown>).chain_hash, "timeline.chain_hash", true);
+    if (!Array.isArray(cps)) {
+      p.push("timeline.checkpoints is not an array");
+    } else {
+      cps.forEach((cp, i) => {
+        if (!isObject(cp)) {
+          p.push(`timeline.checkpoints[${i}] is not an object`);
+          return;
+        }
+        str(cp.at, `timeline.checkpoints[${i}].at`, true);
+        int(cp.words, `timeline.checkpoints[${i}].words`, true);
+        int(cp.chars, `timeline.checkpoints[${i}].chars`, true);
+        str(cp.hash, `timeline.checkpoints[${i}].hash`, true);
+      });
+    }
   }
-  for (const name of ["ai_ranges", "claims"] as const) {
+
+  for (const [name, check] of [
+    ["ai_ranges", (r: Record<string, unknown>, i: number) => {
+      int(r.from, `ai_ranges[${i}].from`, true);
+      int(r.to, `ai_ranges[${i}].to`, true);
+      if (typeof r.from === "number" && typeof r.to === "number" && r.to <= r.from) {
+        p.push(`ai_ranges[${i}] ends at or before it starts`);
+      }
+      str(r.model, `ai_ranges[${i}].model`);
+      if (r.when !== undefined && r.when !== null) str(r.when, `ai_ranges[${i}].when`);
+    }],
+    ["claims", (c: Record<string, unknown>, i: number) => {
+      str(c.excerpt, `claims[${i}].excerpt`, true);
+      str(c.source_url, `claims[${i}].source_url`, true);
+      str(c.status, `claims[${i}].status`);
+    }],
+  ] as const) {
     const v = b[name];
     if (v === undefined || v === null) continue;
-    if (!Array.isArray(v)) p.push(name);
-    else if (!v.every(isObject)) p.push(`${name} entries`);
+    if (!Array.isArray(v)) {
+      p.push(`${name} is not an array`);
+      continue;
+    }
+    v.forEach((item, i) => {
+      if (!isObject(item)) p.push(`${name}[${i}] is not an object`);
+      else check(item, i);
+    });
   }
   return p;
 }

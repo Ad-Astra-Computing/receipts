@@ -92,20 +92,26 @@ func (c *Checkpoint) UnmarshalJSON(data []byte) error {
 // forms, so accepting one here would split the two implementations.
 func (r *AIRange) UnmarshalJSON(data []byte) error {
 	var w struct {
-		From  int    `json:"from"`
-		To    int    `json:"to"`
-		Model string `json:"model"`
-		When  string `json:"when"`
+		From  int     `json:"from"`
+		To    int     `json:"to"`
+		Model string  `json:"model"`
+		When  *string `json:"when"`
 	}
 	if err := strictUnmarshal(data, &w); err != nil {
 		return err
 	}
-	if w.When != "" {
-		if _, err := canonicalTimestamp(w.When); err != nil {
+	// A present-but-empty `when` is not the same as an absent one: the
+	// empty string is not a timestamp, and the TypeScript verifier
+	// refuses it, so accepting it here would split the two.
+	if w.When != nil {
+		if _, err := canonicalTimestamp(*w.When); err != nil {
 			return fmt.Errorf("ai_range: %w", err)
 		}
 	}
-	r.From, r.To, r.Model, r.When = w.From, w.To, w.Model, w.When
+	r.From, r.To, r.Model = w.From, w.To, w.Model
+	if w.When != nil {
+		r.When = *w.When
+	}
 	return nil
 }
 

@@ -95,6 +95,14 @@ func wholeSecondUTC(t time.Time) bool {
 // must arrive at the same bytes this one does. It does not check the
 // body hash against a body; callers holding the body use VerifyBody.
 func Verify(b Bundle) error {
+	// A missing timeline is not an empty one. The chain of no checkpoints
+	// is the empty string, so without this a bundle carrying no record of
+	// composition verified here while the TypeScript verifier refused it.
+	// A receipt whose whole subject is the composition record must have
+	// one, even if it is empty.
+	if b.Timeline.Checkpoints == nil {
+		return errors.New("receipts: timeline.checkpoints is missing")
+	}
 	if b.Schema != Schema {
 		return fmt.Errorf("receipts: unknown schema %q", b.Schema)
 	}
