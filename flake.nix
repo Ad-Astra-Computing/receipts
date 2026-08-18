@@ -15,10 +15,24 @@
         verifier = pkgs.buildNpmPackage {
           pname = "receipts-verifier";
           version = "0.1.1";
-          src = ./verifier;
+          # The whole repo, not just verifier/: the shared rejection
+          # corpus lives at testdata/rejections.json and both test suites
+          # read it, so a derivation scoped to verifier/ would run the
+          # verifier's tests with that gate quietly absent.
+          src = ./.;
+          sourceRoot = "source/verifier";
           # Update with:
           #   nix run nixpkgs#prefetch-npm-deps -- verifier/package-lock.json
           npmDepsHash = "sha256-mBtJ3tu37qn7iPySNp6Aor6fdq4C4ou4eSvqtOq91g4=";
+          # npm run build typechecks and bundles; it does not run vitest,
+          # so without this `nix flake check` reported a green verifier
+          # having never run a verifier test.
+          doCheck = true;
+          checkPhase = ''
+            runHook preCheck
+            npm test
+            runHook postCheck
+          '';
           installPhase = ''
             runHook preInstall
             cp -r dist $out
