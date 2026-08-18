@@ -180,3 +180,32 @@ describe("verdict when no body was supplied", () => {
     expect(verdictSentence(fixture.bundle, fixture.body, res)).not.toContain("not supplied");
   });
 });
+
+// Most writing has no disclosed AI, and saying nothing about it leaves
+// the reader guessing whether the tool checked. The line is about what
+// was disclosed, never about what was used, which the receipt cannot
+// know and must not imply.
+describe("verdict when nothing was disclosed", () => {
+  // verdictSentence is pure, so it can be asked directly. Emptying
+  // ai_ranges on a signed fixture would break its signature and the
+  // verdict would never be reached.
+  const loadFixture = () =>
+    JSON.parse(
+      readFileSync(fileURLToPath(new URL("./testdata/sample-bundle.json", import.meta.url)), "utf8"),
+    ) as { bundle: Bundle; body: string };
+  const verified = { ok: true, checks: [], fingerprint: "abc123", bodyChecked: true };
+
+  it("says so rather than staying silent", () => {
+    const { bundle, body } = loadFixture();
+    const none = { ...bundle, ai_ranges: [] };
+    const verdict = verdictSentence(none, body, verified);
+    expect(verdict).toContain("no AI passages disclosed");
+    // It must not claim the writing is human, only that none was declared.
+    expect(verdict).not.toMatch(/human|no AI (was )?used|written by a person/i);
+  });
+
+  it("still reports the proportion when passages were disclosed", () => {
+    const { bundle, body } = loadFixture();
+    expect(verdictSentence(bundle, body, verified)).toContain("labeled AI-written");
+  });
+});

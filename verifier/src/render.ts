@@ -122,7 +122,15 @@ export function verdictSentence(bundle: Bundle, body: string | undefined, res: V
   }
   const cpNote = cps.length ? `, ${words} words over ${cps.length} checkpoint${cps.length === 1 ? "" : "s"}` : "";
   // Only report a percentage when a body was present to compute it against.
-  const aiNote = body !== undefined && ai.length ? `, ${aiPct}% labeled AI-written` : "";
+  // An empty list is the common case and it used to say nothing at all,
+  // which reads as "this was not checked" rather than "the author
+  // disclosed none". Both halves are about disclosure, never about
+  // whether AI was used: the receipt cannot know that.
+  const aiNote = ai.length
+    ? body !== undefined
+      ? `, ${aiPct}% labeled AI-written`
+      : ", with passages labeled AI-written"
+    : ", no AI passages disclosed";
   // Only claim checks that actually ran. The text check runs only when
   // a body was supplied, so mention "bundled text" only if it did. The
   // C2PA credential is carried inside the signed receipt (its signature

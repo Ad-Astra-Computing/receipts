@@ -410,3 +410,34 @@ footer .fine { font-size: var(--fs--2); }
    verdict staying put reads as "nothing happened". */
 .receipt-inner[aria-busy="true"] { opacity: 0.55; }
 
+
+/* The version-history comparison. It answers the first question most
+   readers have, and it is written for a teacher rather than an
+   implementer, so it is set as prose rather than in the mono of the
+   anatomy tables. */
+.compared {
+  display: grid;
+  gap: var(--s2);
+  margin: var(--s2) 0 0;
+}
+.compared dt {
+  font-family: var(--font-serif);
+  font-size: var(--fs-1);
+  color: var(--bone-0);
+}
+.compared dd {
+  margin: 4px 0 0;
+  color: var(--bone-1);
+  max-width: 62ch;
+}
+.compared-limit {
+  margin-top: var(--s3);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--hairline);
+  color: var(--bone-1);
+  max-width: 62ch;
+}
+
+@media (min-width: 61.8em) {
+  .compared { grid-template-columns: 1fr 1fr; gap: var(--s3) var(--s4); }
+}

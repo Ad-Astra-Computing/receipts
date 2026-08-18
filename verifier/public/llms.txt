@@ -16,6 +16,12 @@ When text is cheap to generate, a clean final draft is no longer evidence that s
 - That the timeline reflects honest work. The signature binds the timeline that was presented at signing, so an author could compose elsewhere, or prune the record, and sign the tidy version.
 - That undisclosed text is human-written. Disclosure is the author's choice; the receipt binds what was disclosed, not what was not.
 
+## How this differs from version history
+
+A common question is whether this is what Google Docs version history already does. Partly, and for a teacher looking at a student's document inside the same school account, version history is often enough. Four things are different. A receipt can be checked by a stranger, with no account, no access to the author's document and no trust in the company that made it, because verification runs in the reader's own browser. A receipt travels with the writing, so it can accompany a published article, an emailed essay or a submission, which an edit history cannot. A receipt carries counts and fingerprints of each draft rather than the draft text, so it is evidence an author can share without exposing everything they wrote and deleted. And a receipt records what the author chose to declare as AI-written, with the model named and the sources they checked, which an edit history does not model at all.
+
+Neither can prove a person wrote something. Anyone determined to fake a composition history can type one out. A receipt is the author's account of how a piece was made, in a form that makes later changes detectable, and the claim stops there.
+
 ## How to verify one
 
 Open [receiptsofthought.com](https://receiptsofthought.com/) and drop the `.receipts.json` file on the page. The check runs in the browser with WebCrypto: the file is never uploaded, and the page makes no network request while verifying, which its content security policy enforces. A verifier can also be built from the specification alone, and this one can be self-hosted.
