@@ -168,7 +168,8 @@ Apache License 2.0. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
 
 The trust core is permissively licensed on purpose. Independent verifiers
 and platforms that embed receipt checking make the format more useful and
-harder to fake. The Folio editor is licensed separately under AGPL-3.0.
-The hosted Folio services are not open source.
+harder to fake. Folio itself, the desktop editor that produces receipts,
+is proprietary, as are the hosted Folio services. What has to be
+checkable by anyone is verification, and that is here.
 
 Built and maintained by [Ad Astra Computing](https://adastracomputing.com).
