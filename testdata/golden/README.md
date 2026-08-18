@@ -1,14 +1,29 @@
 # Golden vectors
 
-These files freeze the wire format. They are signed bundles that the
-reference TypeScript verifier (`verifier/src/verify.ts`) accepts today,
-so any change to the Go implementation that breaks one of them is a
-change to the format itself.
+Signed bundles that freeze the wire format. The Go suite verifies them
+with the same code path a third party would use
+(`receipts/golden_test.go`), so a change to the signing digest, the
+timeline chain or the credential canonicalization breaks these before it
+can reach a published bundle.
 
-- `sample-bundle.json` mirrors `verifier/src/testdata/sample-bundle.json`,
-  the interop fixture: `{bundle, body}`.
-- `sample-hero.json` mirrors `verifier/src/sample.receipts.json`, the
-  sample the hosted verifier loads.
+They are **independent vectors, not copies**. Each was signed once, by a
+throwaway key, and is never regenerated: that is the whole point, since a
+vector regenerated from the current code cannot detect that the current
+code changed. They therefore differ from the fixtures under `verifier/`
+in key, timestamps and content, and are expected to.
 
-The Go test suite verifies both with the same code path a third party
-would use, so the two implementations stay pinned to one format.
+- `sample-bundle.json`: a bundle with disclosed AI ranges and sourced
+  claims, in the `{bundle, body}` transport envelope.
+- `sample-hero.json`: a bundle with a longer timeline.
+
+Related but different things, so it is worth naming them:
+
+- `verifier/src/testdata/sample-bundle.json` is the interop fixture. The
+  Go interop gate regenerates it and hands it to the TypeScript suite.
+- `verifier/src/sample.receipts.json` is the demonstration receipt the
+  hosted page loads.
+- `testdata/rejections.json` is the shared rejection corpus: mutations
+  both implementations must refuse.
+
+If a change here is deliberate, it is a format change, and it needs a new
+schema string rather than an edited vector.

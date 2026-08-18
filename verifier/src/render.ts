@@ -105,7 +105,7 @@ export function disclosedChars(ranges: { from: number; to: number }[], bodyLen: 
   return mergeRanges(ranges, bodyLen).reduce((n, r) => n + (r.to - r.from), 0);
 }
 
-function verdictSentence(bundle: Bundle, body: string | undefined, res: VerifyResult): string {
+export function verdictSentence(bundle: Bundle, body: string | undefined, res: VerifyResult): string {
   if (!res.ok) {
     const failed = res.checks.filter((c) => !c.ok).map((c) => c.name.toLowerCase());
     return `Not verified. Problem with: ${failed.join(", ")}.`;
@@ -127,13 +127,18 @@ function verdictSentence(bundle: Bundle, body: string | undefined, res: VerifyRe
   // a body was supplied, so mention "bundled text" only if it did. The
   // C2PA credential is carried inside the signed receipt (its signature
   // value is bound) but re-verified in full by verifyBundle.
-  const checked = ["the receipt's signature", "the timeline chain"];
-  if (res.checks.some((c) => c.name.toLowerCase().includes("text"))) {
+  const checked = ["the receipt's signature", "the content credential", "the timeline chain"];
+  if (res.bodyChecked) {
     checked.push("the bundled text");
   }
   const list =
     checked.length > 1 ? `${checked.slice(0, -1).join(", ")} and ${checked[checked.length - 1]}` : checked[0];
-  return `Verified. ${list[0].toUpperCase()}${list.slice(1)} check out${cpNote}${aiNote}.`;
+  // Saying nothing about an absent body lets "verified" be read as "the
+  // writing matches", which is a stronger statement than what ran.
+  const bodyNote = res.bodyChecked
+    ? ""
+    : " The writing itself was not supplied, so it was not compared against this receipt.";
+  return `Verified. ${list[0].toUpperCase()}${list.slice(1)} check out${cpNote}${aiNote}.${bodyNote}`;
 }
 
 function curve(bundle: Bundle): HTMLElement {

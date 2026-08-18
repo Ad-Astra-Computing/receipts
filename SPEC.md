@@ -87,6 +87,36 @@ The signing digest hashes the rendered timestamp (section 6), so a
 bundle whose wire timestamp differs from the string that was signed
 verifies in one implementation and fails in another.
 
+## 3a. The transport envelope
+
+A bundle is the root object of a `.receipts.json` file. That file alone
+is enough to verify everything except one thing: whether the published
+body still matches `post.sha256`. To check that, a verifier needs the
+body, and a reader who was handed only a receipt does not have it.
+
+So a producer MAY wrap a bundle for transport:
+
+```json
+{ "bundle": { ...the bundle... }, "body": "the published text" }
+```
+
+Rules:
+
+- The envelope is NOT a bundle and is never signed. Nothing about it is
+  covered by `signature`. Its only purpose is to carry a body alongside
+  the receipt that describes it.
+- A verifier MUST accept both forms: a bare bundle, and an envelope. When
+  it sees an envelope it MUST verify `bundle` exactly as it would a bare
+  one, and additionally check `body` against `post.sha256`.
+- A verifier MUST NOT treat a missing body as a passed body check. It
+  MUST distinguish "the text matches" from "no text was supplied", and
+  say which to the reader, because those are different assurances.
+- `body` is the published text as bytes, decoded as UTF-8.
+
+The envelope is a convenience for demonstration and for readers who
+receive a receipt on its own. A published receipt beside a published post
+does not need it: the reader has the post.
+
 ## 4. Encodings
 
 - Hashes are lowercase hexadecimal.

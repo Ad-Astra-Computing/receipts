@@ -249,6 +249,13 @@ export interface VerifyResult {
   ok: boolean;
   checks: Check[];
   fingerprint: string; // short hex of the signing public key
+  /**
+   * Whether the published text was supplied and checked against
+   * post.sha256. False means the receipt is internally intact but the
+   * writing it describes was never compared to it, which is a weaker
+   * statement and must not be presented as the same one.
+   */
+  bodyChecked: boolean;
 }
 
 // verifyBundle runs every check. When body is supplied, it also
@@ -277,6 +284,7 @@ export async function verifyBundle(input: unknown, body?: string): Promise<Verif
         detail: `this file could not be read as a receipt: ${e instanceof Error ? e.message : String(e)}`,
       }],
       fingerprint: "",
+      bodyChecked: false,
     };
   }
 }
@@ -371,7 +379,7 @@ async function verifyBundleInner(input: unknown, body?: string): Promise<VerifyR
       ok: false,
       detail: `not shaped like a receipt: ${problems.join(", ")}`,
     });
-    return { ok: false, checks, fingerprint: "" };
+    return { ok: false, checks, fingerprint: "", bodyChecked: false };
   }
   const b = input as Bundle;
 
@@ -516,7 +524,8 @@ async function verifyBundleInner(input: unknown, body?: string): Promise<VerifyR
     detail: chain === b.timeline.chain_hash ? undefined : "the checkpoints were reordered or edited after signing",
   });
 
-  if (body !== undefined) {
+  const bodyChecked = body !== undefined;
+  if (bodyChecked) {
     const h = await sha256hex(body);
     const ok = h === b.post.sha256;
     checks.push({
@@ -534,5 +543,5 @@ async function verifyBundleInner(input: unknown, body?: string): Promise<VerifyR
   } catch {
     fp = "";
   }
-  return { ok: checks.every((c) => c.ok), checks, fingerprint: fp };
+  return { ok: checks.every((c) => c.ok), checks, fingerprint: fp, bodyChecked };
 }

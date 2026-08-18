@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, it, expect } from "vitest";
-import { byteRangesToStringRanges, disclosedChars, excerptProse, mergeRanges, stripFrontmatter } from "./render";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { byteRangesToStringRanges, disclosedChars, excerptProse, mergeRanges, stripFrontmatter, verdictSentence } from "./render";
+import { verifyBundle, type Bundle } from "./verify";
 
 // Reconstruct the body the way tapeBody does: plain text between the
 // merged intervals, "marked" text inside them. The result must equal
@@ -150,5 +153,30 @@ describe("byteRangesToStringRanges", () => {
     expect(r.from).toBeGreaterThanOrEqual(0);
     expect(r.to).toBeLessThanOrEqual(body.length);
     expect(() => body.slice(r.from, r.to)).not.toThrow();
+  });
+});
+
+// A receipt verified without its text is intact, but nothing has
+// compared it to any writing. Reporting that as plain "verified" invites
+// the stronger reading.
+describe("verdict when no body was supplied", () => {
+  it("says the writing was not compared", async () => {
+    const fixture = JSON.parse(
+      readFileSync(fileURLToPath(new URL("./testdata/sample-bundle.json", import.meta.url)), "utf8"),
+    ) as { bundle: Bundle; body: string };
+    const res = await verifyBundle(fixture.bundle);
+    expect(res.ok).toBe(true);
+    expect(res.bodyChecked).toBe(false);
+
+    expect(verdictSentence(fixture.bundle, undefined, res)).toContain("not supplied");
+  });
+
+  it("does not say that when the text was checked", async () => {
+    const fixture = JSON.parse(
+      readFileSync(fileURLToPath(new URL("./testdata/sample-bundle.json", import.meta.url)), "utf8"),
+    ) as { bundle: Bundle; body: string };
+    const res = await verifyBundle(fixture.bundle, fixture.body);
+    expect(res.bodyChecked).toBe(true);
+    expect(verdictSentence(fixture.bundle, fixture.body, res)).not.toContain("not supplied");
   });
 });

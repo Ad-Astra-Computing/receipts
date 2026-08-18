@@ -4,7 +4,7 @@ dist/
 .wrangler/
 *.log
 
-# Go (arrives in Stage 2)
+# Go
 *.test
 *.out
 coverage.*
