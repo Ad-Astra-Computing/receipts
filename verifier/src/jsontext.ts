@@ -64,21 +64,27 @@ function duplicateMemberProblem(text: string): string | null {
   let i = 0;
 
   const readString = (): string | null => {
-    // text[i] is the opening quote.
-    let out = "";
+    // text[i] is the opening quote. The raw span is collected and then
+    // decoded, because two spellings of one name are one member: Go
+    // compares decoded names, so "schema" and "\u0073chema" are a
+    // duplicate there and would slip past a raw comparison here.
+    const start = i;
     i++;
     while (i < text.length) {
       const c = text[i];
       if (c === "\\") {
-        out += text[i] + text[i + 1];
         i += 2;
         continue;
       }
       if (c === '"') {
         i++;
-        return out;
+        const raw = text.slice(start, i);
+        try {
+          return JSON.parse(raw) as string;
+        } catch {
+          return raw; // malformed: the parser will report it properly
+        }
       }
-      out += c;
       i++;
     }
     return null; // unterminated: the parser will report it

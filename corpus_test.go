@@ -32,9 +32,13 @@ type rejectionCase struct {
 
 // TestRejectionCorpus applies each shared mutation to the verifier
 // fixture and requires this implementation to refuse it. The TypeScript
-// suite reads the same file and makes the same demand, so the two cannot
-// drift apart on what is INVALID, which one-way "sign here, verify
-// there" gates can never check.
+// suite reads the same file and makes the same demand.
+//
+// What this establishes, exactly: the two agree about the inputs listed
+// in testdata/rejections.json. It does not establish that they agree
+// about every possible input, and saying so would be the kind of
+// unearned claim this project exists to avoid. The corpus grows when a
+// divergence is found; every case in it is a divergence that was found.
 func TestRejectionCorpus(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("testdata", "rejections.json"))
 	if err != nil {

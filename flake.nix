@@ -23,9 +23,15 @@
           # Descend after unpacking rather than naming a source root: the
           # unpacked directory is named after the store path, not "source".
           postUnpack = "sourceRoot=$sourceRoot/verifier";
-          # Update with:
+          # The dependency fetch needs the directory holding
+          # package-lock.json, which is verifier/, while the build needs
+          # the whole repo (see src below). Naming them separately keeps
+          # both true. Update the hash with:
           #   nix run nixpkgs#prefetch-npm-deps -- verifier/package-lock.json
-          npmDepsHash = "sha256-mBtJ3tu37qn7iPySNp6Aor6fdq4C4ou4eSvqtOq91g4=";
+          npmDeps = pkgs.fetchNpmDeps {
+            src = ./verifier;
+            hash = "sha256-taIAqDL0K95MHUiNkf06O3ip1CaKKR6fVsJcIms1SSk=";
+          };
           # npm run build typechecks and bundles; it does not run vitest,
           # so without this `nix flake check` reported a green verifier
           # having never run a verifier test.

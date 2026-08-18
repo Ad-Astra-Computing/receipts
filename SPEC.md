@@ -157,14 +157,23 @@ schema string, not to unsigned members of this one.
 A verifier MUST reject a negative, inverted or empty range. It cannot
 check a range against the body when no body was supplied, so a bundle
 whose ranges exceed the body length is rejected only when the body is
-present (section 8).
+present (section 8). When the body IS present, a verifier MUST also
+reject a range whose `from` or `to` falls inside a UTF-8 character
+rather than at its start: such a range does not describe any text a
+reader can see.
+
+A required member that is present but empty is not present. A verifier
+MUST reject an empty `post.sha256`, `claims[].excerpt`, `claims[].source_url`
+or `signature` field, and MUST reject a required member that is `null`,
+rather than reading it as a default value. A decoder that maps a missing
+number to zero accepts bundles a stricter implementation refuses.
 
 `claims[]`:
 
 | Member | Type | Required | Rule |
 | --- | --- | --- | --- |
-| `excerpt` | string | yes | The sentence being sourced. |
-| `source_url` | string | yes | Not otherwise constrained. A receipt records that the author cited this source, and nothing about whether the source supports the claim. |
+| `excerpt` | string | yes | The sentence being sourced. MUST NOT be empty. |
+| `source_url` | string | yes | MUST NOT be empty. Not otherwise constrained: a receipt records that the author cited this source, and nothing about whether the source supports the claim. |
 | `status` | string | no | Free text. This version defines no enumeration and a verifier MUST NOT infer one. |
 
 `signature`:
@@ -414,7 +423,7 @@ credential has claimed more than it tested.
 | `claim_generator` | string | yes | Non-empty. Conventionally `Name/Version`. |
 | `claim_generator_info` | object | yes | `name` is required and non-empty; `version` and `url` are optional strings. |
 | `created_at` | string | yes | Canonical timestamp (section 4). |
-| `assertions` | array | yes | MAY be empty. Each element is an object with a `label` string and a `data` value. |
+| `assertions` | array | yes | MAY be empty. Each element is an object with a non-empty `label` string and a `data` value. |
 | `signature` | object | yes | `alg`, `public_key`, `value`, as in section 3.1. |
 
 `credential.asset`:
@@ -475,6 +484,15 @@ verifying it, an attacker holding a genuine bundle could rewrite any
 credential content field while leaving `credential.signature.value`
 unchanged and still pass every outer check. A verifier MUST verify this
 inner signature.
+
+### 7.2 Producers
+
+A producer MUST NOT emit a bundle or credential that a conforming
+verifier would reject. Emitting one is worse than failing: nothing is
+detected until a reader checks the receipt, by which time the writing is
+published and the author believes it is covered. An implementation that
+signs SHOULD verify what it has just signed and refuse to return it
+otherwise.
 
 ## 8. Verification obligations
 

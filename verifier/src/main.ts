@@ -36,19 +36,44 @@ async function show(bundle: Bundle, body: string | undefined, animate: boolean, 
   }
 }
 
-function extract(data: unknown): { bundle: Bundle; body?: string } {
-  const d = data as { bundle?: Bundle; body?: string } & Bundle;
-  // A transport envelope carries the published text (SPEC 3a). Anything
-  // other than a string is not that, and passing it on would hash
-  // whatever it happens to stringify as.
-  const body = typeof d?.body === "string" ? d.body : undefined;
-  return { bundle: (d?.bundle ?? d) as Bundle, body };
+/**
+ * Reads a receipts file: either a bare bundle or the transport envelope
+ * of SPEC 3a. Strict about the envelope, as receipts.Decode is in Go:
+ * a document with a `bundle` member is an envelope and may hold nothing
+ * but `bundle` and `body`, and `body` must be text. Being lax here while
+ * the library is strict means the same file is read two ways.
+ */
+function extract(data: unknown): { bundle: Bundle; body?: string; problem?: string } {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    return { bundle: data as Bundle, problem: "this file is not a JSON object" };
+  }
+  const d = data as Record<string, unknown>;
+  if (!("bundle" in d)) return { bundle: data as Bundle };
+
+  const extra = Object.keys(d).filter((k) => k !== "bundle" && k !== "body");
+  if (extra.length > 0) {
+    return { bundle: d.bundle as Bundle, problem: `this envelope has unexpected members: ${extra.join(", ")}` };
+  }
+  if ("body" in d && typeof d.body !== "string") {
+    return { bundle: d.bundle as Bundle, problem: "this envelope's body is not text" };
+  }
+  return { bundle: d.bundle as Bundle, body: d.body as string | undefined };
 }
 
 async function loadFile(f: File) {
   card().classList.add("has-file");
   try {
-    const text = await f.text();
+    // Not f.text(): that replaces invalid UTF-8 with U+FFFD, so a file
+    // Go refuses as malformed would be silently repaired here and then
+    // validated in its repaired form.
+    let text: string;
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(await f.arrayBuffer());
+    } catch {
+      inner().setAttribute("aria-busy", "false");
+      inner().textContent = `${f.name} is not valid UTF-8 text, so it cannot be a receipt.`;
+      return;
+    }
     // Duplicate members and lone surrogates are properties of the text,
     // and JSON.parse destroys the evidence of both.
     const textProblem = jsonTextProblem(text);
@@ -57,7 +82,12 @@ async function loadFile(f: File) {
       inner().textContent = `${f.name} cannot be checked: ${textProblem}.`;
       return;
     }
-    const { bundle, body } = extract(JSON.parse(text));
+    const { bundle, body, problem } = extract(JSON.parse(text));
+    if (problem) {
+      inner().setAttribute("aria-busy", "false");
+      inner().textContent = `${f.name} cannot be checked: ${problem}.`;
+      return;
+    }
     await show(bundle, body, true, f.name);
     card().scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
   } catch {
