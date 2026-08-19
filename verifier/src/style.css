@@ -444,26 +444,30 @@ footer .fine { font-size: var(--fs--2); }
 /* Try to break it. The controls sit under the receipt because they act
    on it, and they are quiet: this is an invitation, not the page's main
    action, which is still verifying a receipt of your own. */
+/* The row sits under the receipt and is the width of it, so the buttons
+   have to fit that measure rather than the page. Short labels and tight
+   padding keep them on one line beside the prompt at desktop widths. */
 .tamper {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--s0) var(--s1);
+  gap: 6px;
   margin-top: var(--s1);
 }
 .tamper-label {
   color: var(--bone-2);
   font-family: var(--font-mono);
-  font-size: var(--fs--1);
+  font-size: var(--fs--2);
+  margin-right: 2px;
 }
 .tamper-btn {
-  padding: 3px 10px;
+  padding: 3px 8px;
   border: 1px solid var(--hairline);
   border-radius: 999px;
   background: transparent;
   color: var(--bone-1);
   font-family: var(--font-sans);
-  font-size: var(--fs--1);
+  font-size: var(--fs--2);
   cursor: pointer;
   transition:
     color var(--motion, 140ms) ease,
@@ -485,4 +489,25 @@ footer .fine { font-size: var(--fs--2); }
   color: var(--bone-1);
   font-size: var(--fs--1);
   max-width: 56ch;
+}
+
+/* The edit itself: what was there, and what replaced it. */
+.tamper-change {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35em;
+  font-family: var(--font-mono);
+  font-size: var(--fs--1);
+}
+.tamper-change del {
+  color: var(--bone-2);
+  text-decoration-color: var(--bone-2);
+}
+.tamper-change ins {
+  color: var(--paper-ink, var(--bone-0));
+  background: color-mix(in srgb, var(--accent, #c9a86a) 22%, transparent);
+  text-decoration: none;
+  padding: 0 3px;
+  border-radius: 2px;
 }

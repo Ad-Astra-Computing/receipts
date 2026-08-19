@@ -15,6 +15,12 @@ import { jsonTextProblem } from "./jsontext";
 type Case = {
   name: string;
   why: string;
+  /**
+   * A fragment of the check name the refusal must mention. Every
+   * mutation also breaks the signature, so without this a case passes
+   * on the signature check while the rule it names goes untested.
+   */
+  expect?: string;
   path?: string;
   set?: unknown;
   delete?: boolean;
@@ -78,6 +84,13 @@ describe("shared rejection corpus", () => {
       apply(b, c);
       const res = await verifyBundle(b);
       expect(res.ok, c.why).toBe(false);
+      if (c.expect) {
+        const failed = res.checks.filter((k) => !k.ok).map((k) => k.name.toLowerCase());
+        expect(
+          failed.some((n) => n.includes(c.expect!.toLowerCase())),
+          `refused, but not for the stated reason. Expected a failing check mentioning "${c.expect}", got: ${failed.join(", ")}`,
+        ).toBe(true);
+      }
     });
   }
 });

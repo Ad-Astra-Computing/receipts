@@ -96,7 +96,7 @@
             check one here, in their own browser, with no account and
             nothing uploaded. Folio is the writing app that produces them.
           </p>
-          <p class="meta">checked in your browser · nothing you drop leaves your machine</p>
+          <p class="meta">checked in your browser · your file never leaves your machine</p>
         </div>
 
         <div class="verifier">
@@ -124,10 +124,10 @@
         <div class="tamper" id="tamper" hidden>
           <span class="tamper-label">Try to break it:</span>
           <button type="button" class="tamper-btn" data-tamper="body">edit the text</button>
-          <button type="button" class="tamper-btn" data-tamper="timeline">reorder the drafts</button>
-          <button type="button" class="tamper-btn" data-tamper="range">move an AI label</button>
-          <button type="button" class="tamper-btn" data-tamper="signature">swap the signature</button>
-          <button type="button" class="tamper-btn tamper-reset" data-tamper="reset" hidden>put it back</button>
+          <button type="button" class="tamper-btn" data-tamper="timeline">reorder drafts</button>
+          <button type="button" class="tamper-btn" data-tamper="range">shrink a label</button>
+          <button type="button" class="tamper-btn" data-tamper="signature">swap signature</button>
+          <button type="button" class="tamper-btn tamper-reset" data-tamper="reset" hidden>undo</button>
         </div>
         </div>
       </section>
@@ -200,41 +200,28 @@
             <dt>Isn't this what version history does?</dt>
             <dd>
               <p>
-                Partly, and the comparison is fair. Google Docs keeps a
-                history of edits, and when the reader can already open your
-                document, that is often enough. Four things are different
-                once the reader is anyone else.
+                It overlaps. Google Docs keeps every edit, and if the
+                person judging your work can already open your document,
+                that will usually do.
               </p>
               <p>
-                <strong>A stranger can check it.</strong> Version history
-                lives inside the account that owns the document, and it
-                means something only to someone who can open that document
-                and who trusts the company storing it. A receipt is a file:
-                whoever receives the writing checks it here, with no
-                account, no permission and no trust in us, because the
-                checking happens in their browser and this page cannot send
-                the file anywhere.
+                It stops working when the reader is anyone else. Edit
+                history lives in the account that owns the file. To use it
+                as evidence you have to give someone access to the
+                document, which means handing over every sentence you
+                cut, and they have to take the platform's word for the
+                log. None of it can be attached to a published article or
+                an emailed draft.
               </p>
               <p>
-                <strong>It travels with the writing.</strong> You cannot
-                attach a document's edit history to a published article, a
-                newsletter, a client deliverable or a submission. A receipt
-                goes wherever the writing goes.
-              </p>
-              <p>
-                <strong>It does not expose your drafts.</strong> Showing
-                version history means handing over the whole document,
-                including everything you wrote and deleted. A receipt
-                carries counts and fingerprints of each draft, never the
-                text, so you can offer evidence without showing anyone your
-                unfinished thinking.
-              </p>
-              <p>
-                <strong>The author says what was AI-written.</strong> An
-                edit history records that text appeared. It does not record
-                that the writer chose to declare a passage as AI-written,
-                which model, or which sources they checked. A receipt
-                carries those as signed statements.
+                A receipt is a separate file. It holds counts and
+                fingerprints of each draft rather than the drafts, so you
+                can hand it to someone without showing them your working.
+                They check it here, in their own browser. No account, no
+                request to you, no trust in us. It also carries the things
+                an edit log has no way to record: which passages the
+                author declared an AI wrote, which model, which sources
+                they checked.
               </p>
             </dd>
           </div>
@@ -242,12 +229,11 @@
             <dt>What if I don't use AI at all?</dt>
             <dd>
               <p>
-                Then the receipt says so: no AI passages disclosed. It still
-                carries the record of the work, that the piece accumulated
-                over time rather than arriving whole, and it still detects
-                any change to the published text after signing. If someone
-                reposts an altered version of your writing, the receipt
-                shows it.
+                Then the receipt says no AI passages were disclosed, and
+                the rest still applies. It shows the piece was built up
+                over time instead of arriving finished, and it detects any
+                change to the text after you signed it. If someone reposts
+                your work with a paragraph quietly altered, that shows up.
               </p>
             </dd>
           </div>
@@ -255,12 +241,11 @@
             <dt>Does this prove a person wrote it?</dt>
             <dd>
               <p>
-                No, and nothing can. Anyone determined to fake a
-                composition history can type one out. A receipt is the
-                author's own account of how a piece was made, in a form
-                that makes later changes detectable and that a reader can
-                check without trusting anyone. The claim stops there, and
-                everything this page reports is worded to stop there too.
+                No. Someone patient enough can type out a fake history,
+                and no format can tell the difference. What a receipt
+                gives you is an account of how the piece was made, signed
+                by whoever made it, which cannot be quietly edited
+                afterwards and which a stranger can check for themselves.
               </p>
             </dd>
           </div>
@@ -268,11 +253,11 @@
             <dt>Does my writing leave my computer?</dt>
             <dd>
               <p>
-                No. Verification runs in your browser, and this page is not
-                permitted to make network requests while it does: that is
-                enforced by the browser through a content security policy,
-                not promised by us. Drop a receipt with the network off and
-                it still works.
+                No. The checking happens in the page you are looking at.
+                While it runs, this page is forbidden from making any
+                network request, and that is the browser enforcing a
+                policy the page ships with, not a promise on our side.
+                Disconnect and drop a receipt: it still works.
               </p>
             </dd>
           </div>
@@ -361,7 +346,7 @@
       </p>
       <p class="fine">
         Annotation vocabulary after DraftMarks (Siddiqui et al., CHI 2026).
-        Verification runs client-side; nothing you drop here leaves your machine.
+        Verification runs client-side; your file never leaves your machine.
       </p>
     </footer>
 

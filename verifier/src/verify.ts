@@ -430,7 +430,14 @@ function structuralProblems(b: unknown): string[] {
     p.push("timeline is missing");
   } else {
     const cps = (b.timeline as Record<string, unknown>).checkpoints;
-    str((b.timeline as Record<string, unknown>).chain_hash, "timeline.chain_hash", true);
+    // Present always; empty only over an empty timeline, which is the
+    // chain of no checkpoints (SPEC 3.1).
+    const chain = (b.timeline as Record<string, unknown>).chain_hash;
+    if (typeof chain !== "string") {
+      p.push("timeline.chain_hash is missing");
+    } else if (chain === "" && Array.isArray(cps) && cps.length > 0) {
+      p.push("timeline.chain_hash is empty but the timeline is not");
+    }
     if (!Array.isArray(cps)) {
       p.push("timeline.checkpoints is not an array");
     } else {

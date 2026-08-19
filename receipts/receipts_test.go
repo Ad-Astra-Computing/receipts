@@ -240,3 +240,53 @@ func TestVerifyBody_rejectsRangesThatDoNotFitTheBody(t *testing.T) {
 		t.Errorf("rejected a range that fits the body: %v", err)
 	}
 }
+
+// Sign verifies what it just built, but validation only looked at values
+// a decoder had produced. A producer could hand in a timestamp with
+// sub-second precision or a string with invalid UTF-8, watch it sign,
+// and ship something that fails as soon as anyone parses it back.
+func TestSignRefusesValuesTheWireCannotCarry(t *testing.T) {
+	key := testKey(t)
+
+	// Sign truncates `generated` itself, which is a documented
+	// normalization rather than a refusal, so the check is that the
+	// artifact it produces is one the wire form can carry.
+	t.Run("sub-second generated is truncated, not signed as-is", func(t *testing.T) {
+		b := buildBundle(t, key, sampleBody)
+		b.Generated = b.Generated.Add(500 * time.Millisecond)
+		signed, err := receipts.Sign(b, key)
+		if err != nil {
+			t.Fatalf("sign: %v", err)
+		}
+		if signed.Generated.Nanosecond() != 0 {
+			t.Fatal("signed a timestamp the wire form cannot express")
+		}
+		wire, err := json.Marshal(signed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var back receipts.Bundle
+		if err := json.Unmarshal(wire, &back); err != nil {
+			t.Fatalf("the bundle it signed does not parse back: %v", err)
+		}
+		if err := receipts.Verify(back); err != nil {
+			t.Fatalf("the bundle it signed does not verify after a round trip: %v", err)
+		}
+	})
+
+	t.Run("non-canonical ai range when", func(t *testing.T) {
+		b := buildBundle(t, key, sampleBody)
+		b.AIRanges = []receipts.AIRange{{From: 0, To: 4, When: "2026-01-01T05:00:00+05:00"}}
+		if _, err := receipts.Sign(b, key); err == nil {
+			t.Fatal("signed a timestamp with a zone offset")
+		}
+	})
+
+	t.Run("invalid UTF-8 in the title", func(t *testing.T) {
+		b := buildBundle(t, key, sampleBody)
+		b.Post.Title = string([]byte{0x48, 0xff, 0x69})
+		if _, err := receipts.Sign(b, key); err == nil {
+			t.Fatal("signed a title that is not valid UTF-8")
+		}
+	})
+}

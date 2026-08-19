@@ -149,9 +149,11 @@ function wireTamper(bundle: Bundle, body: string | undefined): void {
   const reset = panel.querySelector<HTMLButtonElement>(".tamper-reset");
   const note = () => document.getElementById("tamper-note");
 
-  const setNote = (text: string | null) => {
+  // Show the edit, not just its effect. A demonstration that hides what
+  // it changed is asking for the trust it claims to replace.
+  const setNote = (t: { note: string; before: string; after: string } | null) => {
     let el = note();
-    if (!text) {
+    if (!t) {
       el?.remove();
       return;
     }
@@ -162,7 +164,19 @@ function wireTamper(bundle: Bundle, body: string | undefined): void {
       el.setAttribute("role", "status");
       panel.after(el);
     }
-    el.textContent = text;
+    el.replaceChildren();
+    el.append(document.createTextNode(`${t.note} `));
+    if (t.before || t.after) {
+      const change = document.createElement("span");
+      change.className = "tamper-change";
+      const was = document.createElement("del");
+      was.textContent = t.before;
+      const now = document.createElement("ins");
+      now.textContent = t.after;
+      change.append(was, document.createTextNode(" \u2192 "), now);
+      el.append(change, document.createTextNode(" "));
+    }
+    el.append(document.createTextNode("The receipt no longer verifies."));
   };
 
   panel.addEventListener("click", (e) => {
@@ -178,7 +192,7 @@ function wireTamper(bundle: Bundle, body: string | undefined): void {
     }
     const t = tamper(kind, bundle, body);
     if (reset) reset.hidden = false;
-    setNote(`${t.note} The receipt no longer verifies.`);
+    setNote(t);
     card().classList.add("has-file"); // it is no longer the pristine demo
     void show(t.bundle, t.body, true);
   });

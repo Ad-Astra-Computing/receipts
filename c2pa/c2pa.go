@@ -60,8 +60,12 @@ type Asset struct {
 
 // GeneratorInfo describes the tool chain that produced the manifest.
 type GeneratorInfo struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	Name string `json:"name"`
+	// omitempty: a credential signed without a version must not gain one
+	// on its way through this package. Re-emitting it changes the
+	// canonical form and therefore the digest, so a credential another
+	// implementation accepts would fail here.
+	Version string `json:"version,omitempty"`
 	URL     string `json:"url,omitempty"`
 
 	// Unknown members, preserved so the digest covers what was signed.

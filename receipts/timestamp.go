@@ -168,6 +168,18 @@ func (t *TimelineDigest) UnmarshalJSON(data []byte) error {
 	if err := strictUnmarshal(data, &raw); err != nil {
 		return fmt.Errorf("timeline: %w", err)
 	}
+	// The member is required even when its value is the empty string,
+	// which is the chain of no checkpoints (SPEC 3.1). Absent is not the
+	// same as empty, and the TypeScript verifier refuses absent.
+	var probe struct {
+		ChainHash *string `json:"chain_hash"`
+	}
+	if err := json.Unmarshal(data, &probe); err != nil {
+		return fmt.Errorf("timeline: %w", err)
+	}
+	if probe.ChainHash == nil {
+		return errors.New("timeline: chain_hash is missing")
+	}
 	*t = TimelineDigest(raw)
 	return nil
 }
