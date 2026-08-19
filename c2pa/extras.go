@@ -2,7 +2,10 @@
 
 package c2pa
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+)
 
 // The credential's signature covers every member of the object it was
 // computed over, including members this package does not model. So
@@ -61,6 +64,19 @@ func (a *Asset) UnmarshalJSON(data []byte) error {
 	var raw asset
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
+	}
+	// Presence matters: a missing size decoded to zero and then verified
+	// as though it had been signed that way, and re-marshalled as an
+	// explicit 0, which is a different object from the one that was
+	// signed. SPEC 7.0 requires the member.
+	var probe struct {
+		Size *int64 `json:"size"`
+	}
+	if err := json.Unmarshal(data, &probe); err != nil {
+		return err
+	}
+	if probe.Size == nil {
+		return errors.New("c2pa: asset.size is missing")
 	}
 	extras, err := splitExtras(data, assetMembers)
 	if err != nil {

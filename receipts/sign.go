@@ -185,6 +185,47 @@ func VerifyBody(b Bundle, body []byte) error {
 // only one implementation applies is worse than one that stays silent,
 // because an implementer reads it and believes it.
 func validateSemantics(b Bundle) error {
+	// In-memory values, which no decoder has seen. Sign calls Verify on
+	// what it just built, so without these a producer could hand in a
+	// timestamp with a zone offset or a string with invalid UTF-8, watch
+	// it sign, and ship an artifact that fails the moment anyone parses
+	// it back. Checking only what arrived over the wire made the signer's
+	// guarantee true of received bundles and false of built ones.
+	if _, err := canonicalTimestamp(b.Generated.UTC().Format(time.RFC3339)); err != nil {
+		return fmt.Errorf("receipts: generated: %w", err)
+	}
+	if b.Generated.Nanosecond() != 0 {
+		return errors.New("receipts: generated carries sub-second precision, which the wire form cannot express")
+	}
+	for i, cp := range b.Timeline.Checkpoints {
+		if cp.At.Nanosecond() != 0 {
+			return fmt.Errorf("receipts: timeline.checkpoints[%d].at carries sub-second precision", i)
+		}
+	}
+	for i, r := range b.AIRanges {
+		if r.When != "" {
+			if _, err := canonicalTimestamp(r.When); err != nil {
+				return fmt.Errorf("receipts: ai_ranges[%d].when: %w", i, err)
+			}
+		}
+	}
+	for _, str := range []struct {
+		name  string
+		value string
+	}{
+		{"post.title", b.Post.Title},
+		{"post.url", b.Post.URL},
+		{"post.sha256", b.Post.SHA256},
+	} {
+		if !utf8.ValidString(str.value) {
+			return fmt.Errorf("receipts: %s is not valid UTF-8", str.name)
+		}
+	}
+	for i, c := range b.Claims {
+		if !utf8.ValidString(c.Excerpt) || !utf8.ValidString(c.SourceURL) {
+			return fmt.Errorf("receipts: claims[%d] is not valid UTF-8", i)
+		}
+	}
 	for i, cp := range b.Timeline.Checkpoints {
 		if cp.Words < 0 {
 			return fmt.Errorf("receipts: timeline.checkpoints[%d].words is negative", i)

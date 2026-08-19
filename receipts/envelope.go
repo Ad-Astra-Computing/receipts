@@ -53,6 +53,11 @@ func Decode(data []byte) (Bundle, []byte, error) {
 		return Bundle{}, nil, err
 	}
 	if rawBody, ok := probe["body"]; ok {
+		// json.Unmarshal turns null into the empty string, which would
+		// then be checked against the body hash as if it were the text.
+		if string(rawBody) == "null" {
+			return Bundle{}, nil, errors.New("receipts: envelope body is null, which is not text")
+		}
 		var body string
 		if err := json.Unmarshal(rawBody, &body); err != nil {
 			return Bundle{}, nil, errors.New("receipts: envelope body is not a string")

@@ -44,3 +44,22 @@ describe("tamper", () => {
     expect(await failing("signature")).toContain("Receipt signature valid");
   });
 });
+
+// Showing that something broke, without showing what changed, asks the
+// reader for exactly the trust the receipt is meant to replace.
+describe("what changed is shown", () => {
+  for (const kind of ["body", "timeline", "range", "signature"] as Tamper[]) {
+    it(`reports a before and an after: ${kind}`, () => {
+      const t = tamper(kind, fixture.bundle, fixture.body);
+      expect(t.before, `${kind} reported no before`).not.toBe("");
+      expect(t.after, `${kind} reported no after`).not.toBe("");
+      expect(t.before).not.toBe(t.after);
+    });
+  }
+
+  it("names the word it replaced in the text", () => {
+    const t = tamper("body", fixture.bundle, fixture.body);
+    expect(fixture.body).toContain(t.before);
+    expect(t.after).toBe("invoices");
+  });
+});

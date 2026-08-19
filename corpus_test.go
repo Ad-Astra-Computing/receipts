@@ -19,6 +19,10 @@ type rejectionCase struct {
 	Path   string          `json:"path"`
 	Set    json.RawMessage `json:"set"`
 	Delete bool            `json:"delete"`
+	// A fragment the refusal must mention. Every mutation also breaks the
+	// signature, so without this a case can pass on the signature check
+	// while the rule it names goes untested.
+	Expect string `json:"expect"`
 	// Raw cases mutate the serialized text, for properties a parse
 	// destroys: duplicate members and lone surrogates.
 	Raw *struct {
@@ -109,11 +113,44 @@ func TestRejectionCorpus(t *testing.T) {
 				t.Fatal(err)
 			}
 			var b receipts.Bundle
-			if err := json.Unmarshal(mutated, &b); err != nil {
-				return // refused at parse, which is a refusal
+			err = json.Unmarshal(mutated, &b)
+			if err == nil {
+				err = receipts.Verify(b)
 			}
-			if err := receipts.Verify(b); err == nil {
+			if err == nil {
 				t.Fatalf("accepted %q; %s", c.Name, c.Why)
+			}
+			// "canonical" and "signed fields" name checks in the browser
+			// verifier; here the equivalent refusals are the parse and
+			// signature-coverage errors, so match either the fragment or
+			// the Go wording for the same rule.
+			// `expect` names the browser's check; this side words the
+			// same rules differently, so each expectation lists the
+			// wordings that mean it. The point is only that the refusal
+			// came from the rule the case is about, not from the broken
+			// signature that every mutation also causes.
+			if c.Expect != "" {
+				got := strings.ToLower(err.Error())
+				accepted := map[string][]string{
+					"canonical": {
+						"canonical", "whole-second", "bad signature value",
+						"bad public key", "timestamp",
+					},
+					"signed fields": {"unknown field"},
+					"credential":    {"c2pa", "credential"},
+				}[c.Expect]
+				if len(accepted) > 0 {
+					matched := false
+					for _, want := range accepted {
+						if strings.Contains(got, want) {
+							matched = true
+							break
+						}
+					}
+					if !matched {
+						t.Fatalf("refused %q, but not for the stated reason (%s): %v", c.Name, c.Expect, err)
+					}
+				}
 			}
 		})
 	}

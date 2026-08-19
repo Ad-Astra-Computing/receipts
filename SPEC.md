@@ -134,7 +134,7 @@ schema string, not to unsigned members of this one.
 | Member | Type | Required | Rule |
 | --- | --- | --- | --- |
 | `checkpoints` | array | yes | MAY be empty. Each element is an object. |
-| `chain_hash` | string | yes | The chain value of section 5. For an empty `checkpoints` this is the empty string. |
+| `chain_hash` | string | yes | The chain value of section 5. The member MUST be present. Its value is the empty string when, and only when, `checkpoints` is empty: that is the chain of no checkpoints, and it is the one required member whose value may be empty. |
 
 `timeline.checkpoints[]`:
 
@@ -162,10 +162,11 @@ reject a range whose `from` or `to` falls inside a UTF-8 character
 rather than at its start: such a range does not describe any text a
 reader can see.
 
-A required member that is present but empty is not present. A verifier
-MUST reject an empty `post.sha256`, `claims[].excerpt`, `claims[].source_url`
-or `signature` field, and MUST reject a required member that is `null`,
-rather than reading it as a default value. A decoder that maps a missing
+A required member that is present but empty is not present, with the one
+exception named above (`timeline.chain_hash` over an empty timeline). A
+verifier MUST reject an empty `post.sha256`, `claims[].excerpt`,
+`claims[].source_url` or `signature` field, and MUST reject a required
+member that is `null`, rather than reading it as a default value. A decoder that maps a missing
 number to zero accepts bundles a stricter implementation refuses.
 
 `claims[]`:
@@ -284,6 +285,11 @@ does not need it: the reader has the post.
 - The public key and signature are base64url without padding
   (RFC 4648 §5, no trailing `=`).
 - All strings are UTF-8. The signing input is built from UTF-8 bytes.
+- Every number in a bundle is an integer. A producer MUST write them
+  without a fractional part and without an exponent: `1`, never `1.0` or
+  `1e0`. Those spellings denote the same value but not the same token,
+  and an implementation with a typed decoder refuses them while one that
+  parses into a floating-point number does not.
 - Every integer in a bundle MUST lie in the closed range
   `[-(2^53 - 1), 2^53 - 1]`, the largest range every JSON implementation
   reproduces exactly. A producer MUST NOT emit an integer outside it, and
