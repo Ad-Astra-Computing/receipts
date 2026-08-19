@@ -57,9 +57,14 @@ describe("what changed is shown", () => {
     });
   }
 
-  it("names the word it replaced in the text", () => {
+  it("edits words the reader can see on the receipt, not the frontmatter", () => {
     const t = tamper("body", fixture.bundle, fixture.body);
     expect(fixture.body).toContain(t.before);
-    expect(t.after).toBe("invoices");
+    // The displayed prose is what remains after the frontmatter is
+    // stripped; an edit outside it changes the verdict with no visible
+    // cause, which is the opposite of the point.
+    const prose = fixture.body.replace(/^\+\+\+[\s\S]*?\+\+\+\n?/, "");
+    expect(prose).toContain(t.before);
+    expect(t.body).toContain(t.after);
   });
 });

@@ -511,3 +511,14 @@ footer .fine { font-size: var(--fs--2); }
   padding: 0 3px;
   border-radius: 2px;
 }
+
+/* The word the tamper demonstration just changed, marked where it sits
+   in the receipt so cause and effect are in the same place. Distinct
+   from the AI-disclosure mark, which means something else entirely. */
+.tape-body mark.tampered {
+  background: color-mix(in srgb, #b3261e 26%, transparent);
+  color: inherit;
+  outline: 1px solid color-mix(in srgb, #b3261e 55%, transparent);
+  border-radius: 2px;
+  padding: 0 2px;
+}

@@ -17,7 +17,13 @@ const reduceMotion = () =>
 // the hero's async verify landing after a user has dropped a file).
 let renderSeq = 0;
 
-async function show(bundle: Bundle, body: string | undefined, animate: boolean, label?: string) {
+async function show(
+  bundle: Bundle,
+  body: string | undefined,
+  animate: boolean,
+  label?: string,
+  changed?: string,
+) {
   const seq = ++renderSeq;
   if (label) {
     inner().setAttribute("aria-busy", "true");
@@ -28,7 +34,7 @@ async function show(bundle: Bundle, body: string | undefined, animate: boolean, 
   if (seq !== renderSeq) return; // a newer render superseded this one
   const c = card();
   c.classList.remove("animate");
-  renderReceipt(inner(), bundle, body, res);
+  renderReceipt(inner(), bundle, body, res, changed);
   if (animate && !reduceMotion()) {
     // Restart the CSS animation by forcing a reflow.
     void c.offsetWidth;
@@ -194,7 +200,9 @@ function wireTamper(bundle: Bundle, body: string | undefined): void {
     if (reset) reset.hidden = false;
     setNote(t);
     card().classList.add("has-file"); // it is no longer the pristine demo
-    void show(t.bundle, t.body, true);
+    // Pass the new wording so the receipt marks it: the reader should
+    // see what changed on the receipt, not only read about it below.
+    void show(t.bundle, t.body, true, undefined, kind === "body" ? t.after : undefined);
   });
 }
 

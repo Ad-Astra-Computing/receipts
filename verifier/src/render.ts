@@ -248,6 +248,34 @@ export function excerptProse(prose: string, minEnd: number): { text: string; ell
   return { text: trimmed.slice(0, end), ellipsis: true };
 }
 
+/**
+ * Wraps every occurrence of `needle` in the rendered prose so the edit
+ * is visible where it happened. Walks text nodes rather than touching
+ * innerHTML: this element holds text from a file a stranger supplied.
+ */
+function markChanged(root: HTMLElement, needle: string): void {
+  if (needle === "") return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const hits: Text[] = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (n.textContent?.includes(needle)) hits.push(n as Text);
+  }
+  for (const node of hits) {
+    const parts = (node.textContent ?? "").split(needle);
+    const frag = document.createDocumentFragment();
+    parts.forEach((part, i) => {
+      if (i > 0) {
+        const mark = el("mark", "tampered");
+        mark.textContent = needle;
+        mark.title = "changed after signing";
+        frag.append(mark);
+      }
+      if (part) frag.append(document.createTextNode(part));
+    });
+    node.replaceWith(frag);
+  }
+}
+
 function tapeBody(body: string, ranges: { from: number; to: number }[], ellipsis = false): HTMLElement {
   const wrap = el("div", "tape-body");
   // Merged, non-overlapping, clamped intervals: cursor only advances,
@@ -280,7 +308,18 @@ function isRenderable(b: unknown): b is Bundle {
   );
 }
 
-export function renderReceipt(inner: HTMLElement, bundle: Bundle, body: string | undefined, res: VerifyResult) {
+export function renderReceipt(
+  inner: HTMLElement,
+  bundle: Bundle,
+  body: string | undefined,
+  res: VerifyResult,
+  /**
+   * Text to mark inside the displayed prose. The tamper demonstration
+   * passes the word it just changed, so the reader sees the edit on the
+   * receipt rather than being told about it underneath.
+   */
+  changed?: string,
+) {
   inner.replaceChildren(); // DOM/text-only: never innerHTML with bundle content
   inner.classList.toggle("failed", !res.ok);
 
@@ -338,7 +377,9 @@ export function renderReceipt(inner: HTMLElement, bundle: Bundle, body: string |
     const inString = byteRangesToStringRanges(body, ai);
     const shifted = inString.map((r) => ({ from: r.from - offset, to: r.to - offset }));
     const { text, ellipsis } = excerptProse(prose, Math.max(0, ...shifted.map((r) => r.to)));
-    inner.append(tapeBody(text, shifted, ellipsis));
+    const tape = tapeBody(text, shifted, ellipsis);
+    if (changed) markChanged(tape, changed);
+    inner.append(tape);
   }
 
   // Claims
