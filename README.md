@@ -22,7 +22,8 @@ still agree.
 
 - A reference to the published text: title, URL and SHA-256 hash.
 - A signed, C2PA-aligned content credential.
-- The AI-authored character ranges the author chose to disclose.
+- The AI-authored spans the author chose to disclose, as UTF-8 byte
+  ranges into the published text.
 - Sourced claims, each an excerpt and a source URL.
 - A privacy-preserving digest of the composition timeline: per-checkpoint
   word and character counts plus a tamper-evident hash chain, never the

@@ -221,8 +221,9 @@ function curve(bundle: Bundle): HTMLElement {
 
 // stripFrontmatter removes a leading TOML/YAML frontmatter block so the
 // receipt shows the prose a reader actually sees, not raw `+++ ... +++`.
-// Returns the byte offset removed so range offsets (which index the full
-// body) can be shifted onto the prose.
+// Returns the length removed as a JavaScript string index, not a byte
+// offset, so a caller shifts ranges onto the prose after converting them
+// out of bytes, which is what the caller below does.
 export function stripFrontmatter(body: string): { prose: string; offset: number } {
   const m = /^(\+\+\+|---)\r?\n[\s\S]*?\r?\n\1\r?\n+/.exec(body);
   if (m) return { prose: body.slice(m[0].length), offset: m[0].length };
