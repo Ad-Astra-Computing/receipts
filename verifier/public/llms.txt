@@ -33,6 +33,11 @@ Open [receiptsofthought.com](https://receiptsofthought.com/) and drop the `.rece
 - The format and verifier source: [github.com/Ad-Astra-Computing/receipts](https://github.com/Ad-Astra-Computing/receipts), the open Apache-2.0 trust core, including the receipts format [specification](https://github.com/Ad-Astra-Computing/receipts/blob/main/SPEC.md), the Ed25519 signing scheme, a Go module and the client-side verifier. The Go module is `github.com/Ad-Astra-Computing/receipts`.
 - Folio: the desktop writing app for macOS and Linux that produces receipts as you write. Folio itself is proprietary; the format and verifier it produces receipts for are not, which is why a receipt can be checked without it.
 
+## Terms and privacy
+
+- [Privacy](https://receiptsofthought.com/privacy) — the verifier collects nothing: no accounts, no cookies, no analytics. A receipt is read in the browser and never uploaded, and the page's content security policy forbids it from making any network request while it verifies.
+- [Terms](https://receiptsofthought.com/terms) — the code is Apache 2.0 and may be self-hosted; a verification result is evidence about a file, not a judgment about a person; the site is provided as is.
+
 ## Who makes it
 
 [Ad Astra Computing](https://adastracomputing.com), a software company working on verifiable infrastructure, at hello@adastracomputing.com and security@adastracomputing.com. The receipts format and verifier are open so anyone can read, reimplement or host the verification: nothing on this site has to be taken on our word, including this description of it.
