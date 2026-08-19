@@ -34,7 +34,53 @@ func validateJSONText(data []byte) error {
 	if err := rejectLoneSurrogates(data); err != nil {
 		return err
 	}
+	if err := rejectNumberSpellings(data); err != nil {
+		return err
+	}
 	return rejectDuplicateMembers(data)
+}
+
+// rejectNumberSpellings refuses a number written with a fractional part
+// or an exponent. Every number in this format is an integer (SPEC
+// section 4), and 1, 1.0 and 1e0 are one value with three spellings: a
+// typed decoder refuses two of them and a browser parser cannot tell
+// them apart, so the check belongs on the text. The browser does the
+// same in verifier/src/jsontext.ts.
+func rejectNumberSpellings(data []byte) error {
+	s := string(data)
+	inString := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if inString {
+			if c == '\\' {
+				i++
+			} else if c == '"' {
+				inString = false
+			}
+			continue
+		}
+		if c == '"' {
+			inString = true
+			continue
+		}
+		if c != '-' && (c < '0' || c > '9') {
+			continue
+		}
+		j := i
+		if s[j] == '-' {
+			j++
+		}
+		start := j
+		for j < len(s) && (s[j] == '.' || s[j] == 'e' || s[j] == 'E' || s[j] == '+' || s[j] == '-' || (s[j] >= '0' && s[j] <= '9')) {
+			j++
+		}
+		token := s[start:j]
+		if strings.ContainsAny(token, ".eE") {
+			return fmt.Errorf("receipts: %s is written with a fractional part or an exponent; this format carries whole numbers only", s[i:j])
+		}
+		i = j - 1
+	}
+	return nil
 }
 
 func rejectLoneSurrogates(data []byte) error {

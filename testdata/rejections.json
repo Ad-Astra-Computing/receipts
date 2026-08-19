@@ -18,7 +18,8 @@
     "",
     "Cases with `raw` are applied to the serialized text rather than the parsed object, because duplicate members and lone surrogates cannot survive a parse. `raw.duplicate` names a top-level member to repeat; `raw.injectString` replaces the first occurrence of `find` with `replace` in the text.",
     "",
-    "`expect` names a fragment of the check or error the refusal must mention. Every mutation also breaks the signature, so without this a case can pass while the rule it names is never exercised."
+    "`expect` is a fragment the refusal MUST contain, and it names the specific rule rather than a category. Every mutation also breaks the signature, so a loose expectation lets a case pass on that instead of the rule it is about, which is exactly what happened while these were grouped into four buckets.",
+    "`expectGo` gives the Go wording where the two describe the same refusal differently."
   ],
   "cases": [
     {
@@ -26,189 +27,217 @@
       "why": "SPEC 4: hashed timestamps are UTC with a Z designator",
       "path": "timeline.checkpoints.0.at",
       "set": "2026-07-18T14:12:00+05:00",
-      "expect": "canonical"
+      "expect": "timeline.checkpoints[0].at",
+      "expectGo": "canonical"
     },
     {
       "name": "checkpoint timestamp with fractional seconds",
       "why": "SPEC 4: whole seconds only",
       "path": "timeline.checkpoints.0.at",
       "set": "2026-07-18T09:12:00.500Z",
-      "expect": "canonical"
+      "expect": "timeline.checkpoints[0].at",
+      "expectGo": "canonical"
     },
     {
       "name": "generated with a zero offset instead of Z",
       "why": "SPEC 4: +00:00 and Z are different strings and the digest hashes the string",
       "path": "generated",
       "set": "2026-07-20T14:50:51+00:00",
-      "expect": "canonical"
+      "expect": "requires: generated",
+      "expectGo": "canonical"
     },
     {
       "name": "ai range timestamp with an offset",
       "why": "SPEC 4: when is signed and must be canonical",
       "path": "ai_ranges.0.when",
       "set": "2026-07-20T16:50:51+02:00",
-      "expect": "canonical"
+      "expect": "ai_ranges[0].when",
+      "expectGo": "canonical"
     },
     {
       "name": "credential created_at with an offset",
       "why": "SPEC 4: the credential timestamp is canonical too",
       "path": "credential.created_at",
       "set": "2026-07-20T16:50:51+02:00",
-      "expect": "canonical"
+      "expect": "credential.created_at",
+      "expectGo": "whole-second"
     },
     {
       "name": "signature padded with =",
       "why": "SPEC 3: unpadded base64url, and padding decodes to the same bytes",
       "path": "signature.value",
       "set": "PADDED",
-      "expect": "canonical"
+      "expect": "signature.value",
+      "expectGo": "bad signature value"
     },
     {
       "name": "unsigned member at the top level",
       "why": "the signing digest covers a fixed field list, so this rides along unsigned",
       "path": "surprise",
       "set": 1,
-      "expect": "signed fields"
+      "expect": "does not cover: surprise",
+      "expectGo": "unknown field"
     },
     {
       "name": "unsigned member inside a checkpoint",
       "why": "same, one level down",
       "path": "timeline.checkpoints.0.surprise",
       "set": 1,
-      "expect": "signed fields"
+      "expect": "timeline.checkpoints[0].surprise",
+      "expectGo": "unknown field"
     },
     {
       "name": "credential context replaced",
       "why": "SPEC 7: a signed object is not a content credential unless it says it is",
       "path": "credential.@context",
       "set": "https://example.com/not-c2pa",
-      "expect": "credential"
+      "expect": "@context is not",
+      "expectGo": "@context"
     },
     {
       "name": "credential asset hash uppercased",
       "why": "SPEC 4: hashes are lowercase hex, and two spellings would compare unequal",
       "path": "credential.asset.sha256",
       "set": "5255BC2D12FFEF3B1A83C2D9BE60839F27D26D576862111D788F8258789F8D1B",
-      "expect": "credential"
+      "expect": "asset.sha256 is not 64",
+      "expectGo": "asset.sha256"
     },
     {
       "name": "credential assertions removed",
       "why": "SPEC 7: assertions is required, even when empty",
       "path": "credential.assertions",
       "delete": true,
-      "expect": "credential"
+      "expect": "assertions is missing",
+      "expectGo": "assertions"
     },
     {
       "name": "timeline removed entirely",
       "why": "a document with no timeline is not a receipt",
       "path": "timeline",
       "delete": true,
-      "expect": "receipt"
+      "expect": "timeline is missing",
+      "expectGo": "checkpoints"
     },
     {
       "name": "checkpoints is not an array",
       "why": "hostile input must fail as a check, never as an exception",
       "path": "timeline.checkpoints",
       "set": 3,
-      "expect": "receipt"
+      "expect": "timeline.checkpoints is not an array",
+      "expectGo": "cannot unmarshal"
     },
     {
       "name": "post body hash changed",
       "why": "the signature covers it",
       "path": "post.sha256",
       "set": "0000000000000000000000000000000000000000000000000000000000000000",
-      "expect": "signature"
+      "expect": "not signed by the key it names",
+      "expectGo": "signature"
     },
     {
       "name": "checkpoints missing entirely",
       "why": "a receipt with no record of composition is not a receipt; the empty chain hashes to the empty string, which once passed",
       "path": "timeline.checkpoints",
       "delete": true,
-      "expect": "receipt"
+      "expect": "timeline.checkpoints is not an array",
+      "expectGo": "checkpoints"
     },
     {
       "name": "words is a string",
       "why": "SPEC 3: counts are integers, and a typed decoder refuses a string",
       "path": "timeline.checkpoints.0.words",
       "set": "forty",
-      "expect": "receipt"
+      "expect": "words is not a safe integer",
+      "expectGo": "cannot unmarshal"
     },
     {
       "name": "words is fractional",
       "why": "SPEC 3: counts are integers",
       "path": "timeline.checkpoints.0.words",
       "set": 1.5,
-      "expect": "receipt"
+      "expect": "words is not a safe integer",
+      "expectGo": "fractional part"
     },
     {
       "name": "chars is negative",
       "why": "SPEC 3: counts are non-negative",
       "path": "timeline.checkpoints.0.chars",
       "set": -1,
-      "expect": "receipt"
+      "expect": "chars is negative",
+      "expectGo": "negative"
     },
     {
       "name": "post.title is a number",
       "why": "SPEC 3: title is a string, and it is hashed as one",
       "path": "post.title",
       "set": 42,
-      "expect": "receipt"
+      "expect": "post.title is not a string",
+      "expectGo": "cannot unmarshal"
     },
     {
       "name": "post.sha256 is null",
       "why": "SPEC 3: the body hash is required",
       "path": "post.sha256",
       "set": null,
-      "expect": "receipt"
+      "expect": "post.sha256 is null",
+      "expectGo": "is null"
     },
     {
       "name": "ai range ends before it starts",
       "why": "SPEC 3: a range is half-open and non-empty",
       "path": "ai_ranges.0.to",
       "set": 1,
-      "expect": "receipt"
+      "expect": "ends at or before it starts",
+      "expectGo": "before it starts"
     },
     {
       "name": "ai range offset is negative",
       "why": "SPEC 3: offsets are non-negative",
       "path": "ai_ranges.0.from",
       "set": -5,
-      "expect": "receipt"
+      "expect": "ai_ranges[0].from is negative",
+      "expectGo": "negative"
     },
     {
       "name": "ai range when is empty",
       "why": "an empty string is not a timestamp",
       "path": "ai_ranges.0.when",
       "set": "",
-      "expect": "receipt"
+      "expect": "ai_ranges[0].when",
+      "expectGo": "RFC 3339"
     },
     {
       "name": "claim excerpt is a boolean",
       "why": "SPEC 3: excerpt is a string",
       "path": "claims.0.excerpt",
       "set": true,
-      "expect": "receipt"
+      "expect": "claims[0].excerpt is not a string",
+      "expectGo": "cannot unmarshal"
     },
     {
       "name": "signature alg is missing",
       "why": "SPEC 3: alg is required and only Ed25519 is defined",
       "path": "signature.alg",
       "delete": true,
-      "expect": "receipt"
+      "expect": "signature.alg is missing",
+      "expectGo": "alg"
     },
     {
       "name": "chain_hash missing",
       "why": "SPEC 5: the chain value is what makes the timeline tamper-evident",
       "path": "timeline.chain_hash",
       "delete": true,
-      "expect": "receipt"
+      "expect": "timeline.chain_hash is missing",
+      "expectGo": "chain_hash"
     },
     {
       "name": "duplicate top-level member",
       "why": "SPEC 3.3: parsers keep different values, so the document means two things",
       "raw": {
         "duplicate": "schema"
-      }
+      },
+      "expect": "twice",
+      "expectGo": "twice"
     },
     {
       "name": "lone high surrogate in the title",
@@ -218,56 +247,65 @@
           "find": "\"title\": \"",
           "replace": "\"title\": \"\\ud800"
         }
-      }
+      },
+      "expect": "surrogate",
+      "expectGo": "surrogate"
     },
     {
       "name": "checkpoint hash is not hex",
       "why": "SPEC 3.2: 64 lowercase hex; Go rejected it and the browser only checked the type",
       "path": "timeline.checkpoints.0.hash",
       "set": "not-a-hash",
-      "expect": "receipt"
+      "expect": "hash is not 64 lowercase hex",
+      "expectGo": "hex"
     },
     {
       "name": "checkpoint hash is uppercase",
       "why": "SPEC 4: hashes are lowercase, and two spellings would compare unequal",
       "path": "timeline.checkpoints.0.hash",
       "set": "5255BC2D12FFEF3B1A83C2D9BE60839F27D26D576862111D788F8258789F8D1B",
-      "expect": "receipt"
+      "expect": "hash is not 64 lowercase hex",
+      "expectGo": "hex"
     },
     {
       "name": "words is missing",
       "why": "SPEC 3.1: required; Go decoded the absence to zero and accepted it",
       "path": "timeline.checkpoints.0.words",
       "delete": true,
-      "expect": "receipt"
+      "expect": "words is missing",
+      "expectGo": "required"
     },
     {
       "name": "ai range from is missing",
       "why": "SPEC 3.1: required; Go decoded the absence to zero",
       "path": "ai_ranges.0.from",
       "delete": true,
-      "expect": "receipt"
+      "expect": "ai_ranges[0].from is missing",
+      "expectGo": "required"
     },
     {
       "name": "claim excerpt is empty",
       "why": "SPEC 3.1: a required string that is empty is not present; Go rejected it and the browser did not",
       "path": "claims.0.excerpt",
       "set": "",
-      "expect": "receipt"
+      "expect": "claims[0].excerpt is empty",
+      "expectGo": "empty"
     },
     {
       "name": "claim source_url is empty",
       "why": "same",
       "path": "claims.0.source_url",
       "set": "",
-      "expect": "receipt"
+      "expect": "claims[0].source_url is empty",
+      "expectGo": "empty"
     },
     {
       "name": "credential assertion label is empty",
       "why": "SPEC 7.0: assertions are labelled; the browser rejected it and Go did not",
       "path": "credential.assertions.0.label",
       "set": "",
-      "expect": "credential"
+      "expect": "assertions[0].label is empty",
+      "expectGo": "label"
     },
     {
       "name": "escaped duplicate member name",
@@ -277,35 +315,41 @@
           "find": "\"generated\":",
           "replace": "\"\\u0067enerated\": \"2026-07-20T14:50:51Z\",\n  \"generated\":"
         }
-      }
+      },
+      "expect": "twice",
+      "expectGo": "twice"
     },
     {
       "name": "optional post.title is null",
       "why": "SPEC 3.1: null is not a string; Go read it as empty and the browser refused it",
       "path": "post.title",
       "set": null,
-      "expect": "receipt"
+      "expect": "post.title is null",
+      "expectGo": "is null"
     },
     {
       "name": "optional ai range model is null",
       "why": "same, one level down",
       "path": "ai_ranges.0.model",
       "set": null,
-      "expect": "receipt"
+      "expect": "ai_ranges[0].model is null",
+      "expectGo": "is null"
     },
     {
       "name": "optional claim status is null",
       "why": "same",
       "path": "claims.0.status",
       "set": null,
-      "expect": "receipt"
+      "expect": "claims[0].status is null",
+      "expectGo": "is null"
     },
     {
       "name": "ai range when is null",
       "why": "SPEC 3.1: an optional member present as null is refused; both sides read it as absent",
       "path": "ai_ranges.0.when",
       "set": null,
-      "expect": "receipt"
+      "expect": "ai_ranges[0].when is null",
+      "expectGo": "is null"
     }
   ]
 }

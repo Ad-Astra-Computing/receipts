@@ -80,10 +80,11 @@ type GeneratorInfo struct {
 // package modelling every label.
 type Assertion struct {
 	Label string `json:"label"`
-	// A pointer so a missing `data` stays missing. Reconstructing it as
-	// null let a credential signed with `"data": null` verify after the
-	// member was deleted.
-	Data *json.RawMessage `json:"data,omitempty"`
+	// Required, and its value may be null, so it is stored verbatim and
+	// always emitted. A pointer could not tell a null payload from a
+	// missing one, which let a credential signed with `"data": null`
+	// verify after the member was deleted.
+	Data json.RawMessage `json:"data"`
 
 	// Unknown members, preserved so the digest covers what was signed.
 	extras map[string]json.RawMessage

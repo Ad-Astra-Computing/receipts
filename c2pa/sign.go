@@ -117,6 +117,11 @@ func ValidateShape(s SignedManifest) error {
 		if a.Label == "" {
 			return fmt.Errorf("c2pa: assertions[%d].label is empty", i)
 		}
+		// Required by SPEC 7.0. A null payload is a value and is kept;
+		// no payload at all is not.
+		if len(a.Data) == 0 {
+			return fmt.Errorf("c2pa: assertions[%d] has no data", i)
+		}
 	}
 	return nil
 }
