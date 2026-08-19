@@ -101,8 +101,22 @@ func TestRejectionCorpus(t *testing.T) {
 					}
 					text = strings.Replace(text, c.Raw.InjectString.Find, c.Raw.InjectString.Replace, 1)
 				}
-				if _, _, err := receipts.Decode([]byte(text)); err == nil {
+				_, _, err := receipts.Decode([]byte(text))
+				if err == nil {
 					t.Fatalf("accepted %q; %s", c.Name, c.Why)
+				}
+				// Raw cases used to return here without checking their
+				// expectation, so they proved only that something
+				// refused the file.
+				want := c.Expect
+				if c.ExpectGo != "" {
+					want = c.ExpectGo
+				}
+				if want == "" {
+					t.Fatalf("case %q carries no expectation", c.Name)
+				}
+				if !strings.Contains(strings.ToLower(err.Error()), strings.ToLower(want)) {
+					t.Fatalf("refused %q, but not for the stated reason (%q): %v", c.Name, want, err)
 				}
 				return
 			}

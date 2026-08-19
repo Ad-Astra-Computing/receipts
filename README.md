@@ -52,6 +52,7 @@ than a recorded writing session.
       "mime": "text/markdown"
     },
     "claim_generator": "Folio/0.1.0",
+    "claim_generator_info": { "name": "Folio", "version": "0.1.0" },
     "created_at": "2026-07-20T14:50:51Z",
     "assertions": [
       "… 3 assertions …"

@@ -51,11 +51,13 @@ type Asset struct {
 	SHA256 string `json:"sha256"`
 	Size   int64  `json:"size"`
 	MIME   string `json:"mime"`
-	// Pointers, not omitempty: the digest is taken over a re-encoding of
-	// this object, so absent, present-and-empty and null must each come
-	// back as themselves. With omitempty a credential signed without a
-	// title verified with `"title": ""` added, and one signed with an
-	// empty title verified with it removed.
+	// Pointers: the digest is taken over a re-encoding of this object,
+	// so whether a member was there at all has to survive the trip. With
+	// a plain string plus omitempty, a credential signed without a title
+	// verified with `"title": ""` added, and one signed with an empty
+	// title verified with it removed. A literal null is refused at parse
+	// rather than represented, since a pointer cannot tell it from
+	// absent (SPEC section 3.1).
 	Title *string `json:"title,omitempty"`
 	URL   *string `json:"url,omitempty"`
 

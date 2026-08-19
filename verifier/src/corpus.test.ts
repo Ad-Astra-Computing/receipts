@@ -77,7 +77,15 @@ describe("shared rejection corpus", () => {
           expect(text.includes(find), `${find} is not in the fixture`).toBe(true);
           text = text.replace(find, replace);
         }
-        expect(jsonTextProblem(text), c.why).not.toBeNull();
+        const problem = jsonTextProblem(text);
+        expect(problem, c.why).not.toBeNull();
+        // Raw cases used to stop here, so they proved only that
+        // something refused the text, not that the named rule did.
+        expect(c.expect, `case "${c.name}" carries no expectation`).toBeTruthy();
+        expect(
+          problem!.toLowerCase().includes(c.expect!.toLowerCase()),
+          `refused, but not for the stated reason. Expected "${c.expect}", got: ${problem}`,
+        ).toBe(true);
         return;
       }
       const b = JSON.parse(JSON.stringify(fixture.bundle)) as Record<string, unknown>;

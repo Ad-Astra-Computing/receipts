@@ -442,7 +442,7 @@ credential has claimed more than it tested.
 | Member | Type | Required | Rule |
 | --- | --- | --- | --- |
 | `sha256` | string | yes | 64 lowercase hex characters, and MUST equal `post.sha256`. |
-| `size` | integer | yes | Non-negative: the published body's length in bytes. |
+| `size` | integer | yes | Non-negative: the published body's length in bytes. A verifier given the body MUST check it, as it checks the hash; given no body it cannot, and MUST NOT report it as checked. |
 | `mime` | string | yes | Non-empty. |
 | `title` | string | no | |
 | `url` | string | no | |

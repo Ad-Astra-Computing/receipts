@@ -665,6 +665,19 @@ async function verifyBundleInner(input: unknown, body?: string): Promise<VerifyR
     // past the end of the text, or into the middle of a character,
     // verifies in the browser and is refused by the library.
     const bytes = enc.encode(body);
+
+    // The credential states the body's length; with the body in hand
+    // that is checkable, and a signed number nobody compares is
+    // decoration. Go checks it in VerifyBody.
+    const declared = (b.credential as unknown as { asset?: { size?: number } }).asset?.size;
+    checks.push({
+      name: "Text is the length the credential states",
+      ok: declared === bytes.length,
+      detail: declared === bytes.length
+        ? undefined
+        : `the credential says ${declared} bytes; this text is ${bytes.length}`,
+    });
+
     const bad: string[] = [];
     for (const [i, r] of (b.ai_ranges ?? []).entries()) {
       if (r.to > bytes.length) {
