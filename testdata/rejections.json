@@ -116,7 +116,8 @@
       "name": "post body hash changed",
       "why": "the signature covers it",
       "path": "post.sha256",
-      "set": "0000000000000000000000000000000000000000000000000000000000000000"
+      "set": "0000000000000000000000000000000000000000000000000000000000000000",
+      "expect": "signature"
     },
     {
       "name": "checkpoints missing entirely",
@@ -270,10 +271,41 @@
     },
     {
       "name": "escaped duplicate member name",
-      "why": "SPEC 3.3: names are compared decoded, so two spellings are one member",
+      "why": "SPEC 3.3: names are compared decoded, so \\u0067enerated and generated are one member",
       "raw": {
-        "duplicate": "generated"
+        "injectString": {
+          "find": "\"generated\":",
+          "replace": "\"\\u0067enerated\": \"2026-07-20T14:50:51Z\",\n  \"generated\":"
+        }
       }
+    },
+    {
+      "name": "optional post.title is null",
+      "why": "SPEC 3.1: null is not a string; Go read it as empty and the browser refused it",
+      "path": "post.title",
+      "set": null,
+      "expect": "receipt"
+    },
+    {
+      "name": "optional ai range model is null",
+      "why": "same, one level down",
+      "path": "ai_ranges.0.model",
+      "set": null,
+      "expect": "receipt"
+    },
+    {
+      "name": "optional claim status is null",
+      "why": "same",
+      "path": "claims.0.status",
+      "set": null,
+      "expect": "receipt"
+    },
+    {
+      "name": "ai range when is null",
+      "why": "SPEC 3.1: an optional member present as null is refused; both sides read it as absent",
+      "path": "ai_ranges.0.when",
+      "set": null,
+      "expect": "receipt"
     }
   ]
 }

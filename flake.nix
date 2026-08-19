@@ -54,9 +54,12 @@
           version = "0.1.1";
           src = ./.;
           vendorHash = null;
-          # The interop test needs npm, which the sandbox has not got, so it
-          # skips here. CI runs it and asserts it did not skip.
-          subPackages = [ "receipts" "c2pa" "provenance" "history" "claims" ];
+          # No subPackages list: it excluded the root package, where the
+          # shared rejection corpus and the interop gate live, so this
+          # check was green without running either. The interop test
+          # needs npm, which the sandbox has not got, so that one skips
+          # here; CI runs it and asserts it did not skip.
+          subPackages = [ "." "receipts" "c2pa" "provenance" "history" "claims" ];
         };
       in
       {

@@ -138,7 +138,21 @@ func TestRejectionCorpus(t *testing.T) {
 					},
 					"signed fields": {"unknown field"},
 					"credential":    {"c2pa", "credential"},
+					// "receipt" means the structural pass refused it.
+					// This entry used to be missing, so every case using
+					// it silently received no assertion at all and could
+					// pass on the broken signature instead: the exact
+					// false positive the expectations exist to stop.
+					"signature": {"signature does not verify", "signature", "body does not match"},
+					"receipt": {
+						"receipts:", "checkpoint", "ai_range", "claim",
+						"timeline", "post", "signature", "cannot unmarshal",
+						"is null", "invalid character", "json:",
+					},
 				}[c.Expect]
+				if len(accepted) == 0 {
+					t.Fatalf("case %q expects %q, which this harness does not know how to check", c.Name, c.Expect)
+				}
 				if len(accepted) > 0 {
 					matched := false
 					for _, want := range accepted {

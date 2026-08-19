@@ -26,10 +26,10 @@ func sampleInput() BuildInput {
 			SHA256: strings.Repeat("a", 64),
 			Size:   299,
 			MIME:   "text/markdown",
-			Title:  "Keep the receipts",
-			URL:    "https://blog.example.com/post/keep-the-receipts/",
+			Title:  Optional("Keep the receipts"),
+			URL:    Optional("https://blog.example.com/post/keep-the-receipts/"),
 		},
-		Generator: GeneratorInfo{Name: "Folio", Version: "0.1.0", URL: "https://example.com"},
+		Generator: GeneratorInfo{Name: "Folio", Version: Optional("0.1.0"), URL: Optional("https://example.com")},
 		CreatedAt: time.Date(2026, 7, 20, 14, 50, 51, 123456789, time.UTC),
 		AIRanges: []AIRange{{
 			From: 10, To: 28, Model: "claude-opus-4-8",

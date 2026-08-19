@@ -113,13 +113,13 @@ func build() (receipts.Bundle, error) {
 			SHA256: assetHash,
 			Size:   int64(len(body)),
 			MIME:   "text/markdown",
-			Title:  title,
-			URL:    url,
+			Title:  c2pa.Optional(title),
+			URL:    c2pa.Optional(url),
 		},
 		Generator: c2pa.GeneratorInfo{
 			Name:    "Folio",
-			Version: "0.1.0",
-			URL:     "https://github.com/Ad-Astra-Computing/folio",
+			Version: c2pa.Optional("0.1.0"),
+			URL:     c2pa.Optional("https://github.com/Ad-Astra-Computing/folio"),
 		},
 		CreatedAt: created,
 		AIRanges: []c2pa.AIRange{{

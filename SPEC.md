@@ -162,6 +162,11 @@ reject a range whose `from` or `to` falls inside a UTF-8 character
 rather than at its start: such a range does not describe any text a
 reader can see.
 
+An optional member present with a literal `null` is not the same as an
+absent one, and MUST be rejected: every member has a type in these
+tables and `null` is not a string. The exceptions are `ai_ranges` and
+`claims`, where `null` is defined above to mean an empty list.
+
 A required member that is present but empty is not present, with the one
 exception named above (`timeline.chain_hash` over an empty timeline). A
 verifier MUST reject an empty `post.sha256`, `claims[].excerpt`,
@@ -538,10 +543,20 @@ checks. Every input it needs is in the bundle and, optionally, the body.
 
 ## 9. What a valid bundle does and does not prove
 
-A valid bundle proves that the described process, credential and body
-have not been altered since they were signed by the named key, and that
-they are consistent with one another. That is a claim about tamper
-evidence and about the continuity of one embedded key. It is not a claim
+A valid bundle proves that the described process and credential have not
+been altered since they were signed by the named key, and that they are
+consistent with one another.
+
+The body is a separate matter. A bundle carries the body's hash, not the
+body, so a verifier given only a bundle establishes nothing about the
+text itself: it cannot compare what it was not given. Only a verifier
+that also receives the body (section 3a) can say the published text is
+the text that was signed, and it MUST distinguish the two outcomes
+rather than reporting a bundle-only check as though the writing had been
+examined.
+
+That is a claim about tamper evidence and about the continuity of one
+embedded key. It is not a claim
 about who holds that key: this format defines no mechanism binding a key
 to a person, and a verifier that reports one is reporting something this
 specification does not establish.

@@ -18,7 +18,42 @@
 
 /** Returns the first problem with the raw text, or null. */
 export function jsonTextProblem(text: string): string | null {
-  return loneSurrogateProblem(text) ?? duplicateMemberProblem(text);
+  return loneSurrogateProblem(text) ?? numberSpellingProblem(text) ?? duplicateMemberProblem(text);
+}
+
+/**
+ * Every number in a receipt is an integer (SPEC section 4), and the
+ * spelling is part of the wire form: 1, never 1.0 or 1e0. JSON.parse
+ * turns all three into the same value, so the spelling has to be checked
+ * on the text. Go's typed decoder refuses the other two, and without
+ * this the browser would accept a file the library rejects.
+ */
+function numberSpellingProblem(text: string): string | null {
+  let inString = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inString) {
+      if (c === "\\") i++;
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') {
+      inString = true;
+      continue;
+    }
+    if (c !== "-" && (c < "0" || c > "9")) continue;
+    // A number token: read to its end and judge the whole of it.
+    let j = i;
+    if (text[j] === "-") j++;
+    const start = j;
+    while (j < text.length && /[0-9.eE+-]/.test(text[j])) j++;
+    const token = text.slice(start, j);
+    if (token.includes(".") || token.includes("e") || token.includes("E")) {
+      return `${text.slice(i, j)} is written with a fractional part or an exponent; this format carries whole numbers only`;
+    }
+    i = j - 1;
+  }
+  return null;
 }
 
 function loneSurrogateProblem(text: string): string | null {

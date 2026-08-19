@@ -20,7 +20,7 @@ func testManifest(t *testing.T) (SignedManifest, ed25519.PrivateKey) {
 	}
 	m, err := Build(BuildInput{
 		Asset:     Asset{SHA256: strings.Repeat("a", 64), Size: 10, MIME: "text/markdown"},
-		Generator: GeneratorInfo{Name: "Test", Version: "1"},
+		Generator: GeneratorInfo{Name: "Test", Version: Optional("1")},
 		CreatedAt: time.Now().UTC().Truncate(time.Second),
 	})
 	if err != nil {
@@ -165,5 +165,70 @@ func TestValidateShapeNamesWhatIsMissing(t *testing.T) {
 	}
 	if err := ValidateShape(good); err != nil {
 		t.Fatalf("rejected a well-formed credential: %v", err)
+	}
+}
+
+// The digest is taken over a re-encoding of the parsed credential, so
+// anything the model cannot represent exactly is a way to change a
+// signed object without the signature noticing. These are the four the
+// review found: an optional string collapsing to absent, one appearing
+// from nowhere, and an assertion payload doing each.
+func TestOptionalCredentialMembersSurviveExactly(t *testing.T) {
+	signed, key := testManifest(t)
+	// Sign a credential that HAS a title and a generator version.
+	signed.Asset.Title = Optional("a title")
+	signed.GeneratorInfo.Version = Optional("1.2.3")
+	digest, err := Digest(signed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signed.Signature.Value = base64.RawURLEncoding.EncodeToString(ed25519.Sign(key, digest))
+	wire, err := json.Marshal(signed)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for name, mutate := range map[string]func(map[string]any){
+		"title removed":   func(o map[string]any) { delete(o["asset"].(map[string]any), "title") },
+		"title emptied":   func(o map[string]any) { o["asset"].(map[string]any)["title"] = "" },
+		"title nulled":    func(o map[string]any) { o["asset"].(map[string]any)["title"] = nil },
+		"version removed": func(o map[string]any) { delete(o["claim_generator_info"].(map[string]any), "version") },
+		"data removed": func(o map[string]any) {
+			as := o["assertions"].([]any)
+			delete(as[0].(map[string]any), "data")
+		},
+		"data nulled": func(o map[string]any) {
+			as := o["assertions"].([]any)
+			as[0].(map[string]any)["data"] = nil
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var obj map[string]any
+			if err := json.Unmarshal(wire, &obj); err != nil {
+				t.Fatal(err)
+			}
+			mutate(obj)
+			tampered, err := json.Marshal(obj)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var back SignedManifest
+			if err := json.Unmarshal(tampered, &back); err != nil {
+				return // refused at parse, which is a refusal
+			}
+			if err := Verify(back); err == nil {
+				t.Fatalf("a credential changed after signing (%s) still verified", name)
+			}
+		})
+	}
+
+	// And the untouched credential must still verify, or the above
+	// passes for the wrong reason.
+	var untouched SignedManifest
+	if err := json.Unmarshal(wire, &untouched); err != nil {
+		t.Fatal(err)
+	}
+	if err := Verify(untouched); err != nil {
+		t.Fatalf("the unmutated credential does not verify: %v", err)
 	}
 }

@@ -153,6 +153,9 @@ func VerifyBody(b Bundle, body []byte) error {
 	if err := Verify(b); err != nil {
 		return err
 	}
+	if !utf8.Valid(body) {
+		return errors.New("receipts: body is not valid UTF-8")
+	}
 	sum := sha256.Sum256(body)
 	if hex.EncodeToString(sum[:]) != b.Post.SHA256 {
 		return errors.New("receipts: body does not match bundle hash")
@@ -201,6 +204,11 @@ func validateSemantics(b Bundle) error {
 		if cp.At.Nanosecond() != 0 {
 			return fmt.Errorf("receipts: timeline.checkpoints[%d].at carries sub-second precision", i)
 		}
+		// A time in another zone renders with an offset, which the wire
+		// form forbids, so it would sign here and fail on parse.
+		if cp.At.Location() != time.UTC {
+			return fmt.Errorf("receipts: timeline.checkpoints[%d].at is not in UTC", i)
+		}
 	}
 	for i, r := range b.AIRanges {
 		if r.When != "" {
@@ -222,8 +230,13 @@ func validateSemantics(b Bundle) error {
 		}
 	}
 	for i, c := range b.Claims {
-		if !utf8.ValidString(c.Excerpt) || !utf8.ValidString(c.SourceURL) {
+		if !utf8.ValidString(c.Excerpt) || !utf8.ValidString(c.SourceURL) || !utf8.ValidString(c.Status) {
 			return fmt.Errorf("receipts: claims[%d] is not valid UTF-8", i)
+		}
+	}
+	for i, r := range b.AIRanges {
+		if !utf8.ValidString(r.Model) || !utf8.ValidString(r.When) {
+			return fmt.Errorf("receipts: ai_ranges[%d] is not valid UTF-8", i)
 		}
 	}
 	for i, cp := range b.Timeline.Checkpoints {
