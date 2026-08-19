@@ -160,6 +160,13 @@ func VerifyBody(b Bundle, body []byte) error {
 	if hex.EncodeToString(sum[:]) != b.Post.SHA256 {
 		return errors.New("receipts: body does not match bundle hash")
 	}
+	// The credential states the body's length. With the body in hand
+	// that is checkable, and a signed number nobody compares is
+	// decoration: a receipt could claim 306 bytes over a 6000-byte body
+	// and verify here while the browser refused it.
+	if int64(len(body)) != b.Credential.Asset.Size {
+		return fmt.Errorf("receipts: the credential says the body is %d bytes; it is %d", b.Credential.Asset.Size, len(body))
+	}
 	// Once the body is in hand, the disclosed ranges can be checked
 	// against it. Without this a receipt could point past the end of the
 	// text it describes, or into the middle of a character, and still

@@ -44,6 +44,25 @@ describe("verifyBundle against a Go-signed fixture", () => {
     expect(res.checks.find((c) => c.name.includes("signature"))?.ok).toBe(false);
   });
 
+  it("refuses a body of a length the credential does not state", async () => {
+    // The credential carries the body's byte length. On the genuine
+    // fixture the check must exist and pass; with the number changed it
+    // must fail on its own terms, so deleting the check fails here
+    // rather than passing quietly.
+    const good = await verifyBundle(fixture.bundle, fixture.body);
+    const named = good.checks.find((c) => c.name.includes("length the credential states"));
+    expect(named, "the declared-length check is missing").toBeDefined();
+    expect(named?.ok).toBe(true);
+
+    const b = structuredClone(fixture.bundle);
+    (b.credential.asset as { size: number }).size += 1;
+    const res = await verifyBundle(b, fixture.body);
+    const wrong = res.checks.find((c) => c.name.includes("length the credential states"));
+    expect(wrong?.ok).toBe(false);
+    expect(wrong?.detail).toContain("bytes");
+    expect(res.ok).toBe(false);
+  });
+
   it("rejects a reordered timeline", async () => {
     const b = structuredClone(fixture.bundle);
     const cps = b.timeline.checkpoints ?? [];

@@ -126,7 +126,11 @@ It checks:
 - the embedded content credential's own signature and its bindings to the
   bundle around it,
 - the composition timeline's hash chain,
-- that the published text matches the hash recorded in the bundle.
+- that the published text matches the hash recorded in the bundle, and
+  the length the credential states, when you give it the text. A bundle
+  carries the text's fingerprint rather than the text, so a receipt
+  checked on its own leaves that question open, and the page says which
+  of the two it did.
 
 ## Use the Go module
 

@@ -29,13 +29,22 @@ func testKey(t *testing.T) ed25519.PrivateKey {
 // body, sign a credential over it, digest the timeline, then sign.
 func buildBundle(t *testing.T, key ed25519.PrivateKey, body string) receipts.Bundle {
 	t.Helper()
+	return buildBundleSize(t, key, body, int64(len(body)))
+}
+
+// buildBundleSize is buildBundle with the credential's declared byte
+// length under the caller's control, so a test can sign a size that
+// disagrees with the body it describes. Every signature is still real:
+// the disagreement is in what was signed, not in the signing.
+func buildBundleSize(t *testing.T, key ed25519.PrivateKey, body string, size int64) receipts.Bundle {
+	t.Helper()
 	sum := sha256.Sum256([]byte(body))
 	assetHash := hex.EncodeToString(sum[:])
 
 	manifest, err := c2pa.Build(c2pa.BuildInput{
 		Asset: c2pa.Asset{
 			SHA256: assetHash,
-			Size:   int64(len(body)),
+			Size:   size,
 			MIME:   "text/markdown",
 			Title:  c2pa.Optional("Keep the receipts"),
 			URL:    c2pa.Optional("https://blog.example.com/post/keep-the-receipts/"),
@@ -289,4 +298,25 @@ func TestSignRefusesValuesTheWireCannotCarry(t *testing.T) {
 			t.Fatal("signed a title that is not valid UTF-8")
 		}
 	})
+}
+
+// A credential states the body's length. Nothing compared it, so the
+// number was signed and then ignored: a receipt could say 306 bytes over
+// a 6000-byte body and verify. The browser refused that; Go did not.
+func TestVerifyBodyRefusesDeclaredSizeMismatch(t *testing.T) {
+	key := testKey(t)
+	body := "the published text, whatever length it happens to be"
+	b := buildBundleSize(t, key, body, int64(len(body))+1)
+
+	if err := receipts.VerifyBody(b, []byte(body)); err == nil {
+		t.Fatal("a credential declaring the wrong byte length verified")
+	} else if !strings.Contains(err.Error(), "bytes") {
+		t.Fatalf("refused, but not for the declared length: %v", err)
+	}
+
+	// The same bundle without the body is still valid: with nothing to
+	// compare, the length is not a check that can be run.
+	if err := receipts.Verify(b); err != nil {
+		t.Fatalf("bundle without a body should still verify: %v", err)
+	}
 }
