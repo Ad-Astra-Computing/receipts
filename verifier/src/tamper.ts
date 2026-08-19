@@ -38,14 +38,17 @@ export function tamper(kind: Tamper, bundle: Bundle, body: string | undefined): 
       // The commonest forgery: publish something other than what was
       // signed. One word is enough.
       const text = body ?? "";
-      const word = text.includes("receipts") ? "receipts" : text.trim().split(/\s+/)[0] ?? "";
-      const edited = word ? text.replace(word, "invoices") : `${text} edited`;
+      // The word must be one the reader can SEE on the receipt. The
+      // first attempt changed a word in the frontmatter title, which is
+      // stripped before the body is displayed, so the demonstration
+      // showed an effect with its cause hidden.
+      const [before, after] = pickVisibleWord(text);
       return {
         bundle: b,
-        body: edited,
+        body: text.replace(before, after),
         note: "One word of the published text was changed.",
-        before: word,
-        after: "invoices",
+        before,
+        after,
       };
     }
     case "timeline": {
@@ -103,6 +106,27 @@ export function tamper(kind: Tamper, bundle: Bundle, body: string | undefined): 
       };
     }
   }
+}
+
+/**
+ * A word from the prose the receipt displays, and what to replace it
+ * with. Inverting the claim is the edit a forger would actually want,
+ * and it reads clearly in one line.
+ */
+function pickVisibleWord(text: string): [string, string] {
+  const candidates: [string, string][] = [
+    ["proves nothing", "proves everything"],
+    ["sources checked", "sources invented"],
+    ["disclosed and signed", "undisclosed and unsigned"],
+  ];
+  for (const [before, after] of candidates) {
+    if (text.includes(before)) return [before, after];
+  }
+  // Nothing recognised: fall back to the first word after any
+  // frontmatter, which is at least on screen.
+  const prose = text.replace(/^\+\+\+[\s\S]*?\+\+\+\n?/, "").trim();
+  const first = prose.split(/\s+/)[0] ?? "";
+  return [first, "altered"];
 }
 
 /** The time part of a canonical timestamp, for a reader. */
