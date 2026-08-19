@@ -274,6 +274,27 @@
       "raw": {
         "duplicate": "generated"
       }
+    },
+    {
+      "name": "optional post.title is null",
+      "why": "SPEC 3.1: null is not a string; Go read it as empty and the browser refused it",
+      "path": "post.title",
+      "set": null,
+      "expect": "receipt"
+    },
+    {
+      "name": "optional ai range model is null",
+      "why": "same, one level down",
+      "path": "ai_ranges.0.model",
+      "set": null,
+      "expect": "receipt"
+    },
+    {
+      "name": "optional claim status is null",
+      "why": "same",
+      "path": "claims.0.status",
+      "set": null,
+      "expect": "receipt"
     }
   ]
 }

@@ -381,7 +381,15 @@ function structuralProblems(b: unknown): string[] {
   const p: string[] = [];
 
   const str = (v: unknown, name: string, required = false) => {
-    if (v === undefined || v === null) {
+    // Absent and null are different documents. Section 3.1 gives every
+    // member a type and null is not a string, so an optional member
+    // present as null is refused rather than read as absent. Go decodes
+    // null to the empty string, so leaving it here split the two.
+    if (v === null) {
+      p.push(`${name} is null; omit it or give it a value`);
+      return;
+    }
+    if (v === undefined) {
       if (required) p.push(`${name} is missing`);
       return;
     }

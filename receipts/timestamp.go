@@ -45,6 +45,25 @@ func strictUnmarshal(data []byte, v any) error {
 	return nil
 }
 
+// rejectNullMembers refuses members present with a literal null value.
+//
+// Go decodes null into the zero value, so `"title": null` became "" and
+// verified, while the TypeScript verifier refused it. Absent and null
+// are different documents and section 3.1 gives every member a type;
+// null is not a string.
+func rejectNullMembers(data []byte, names ...string) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	for _, name := range names {
+		if v, ok := raw[name]; ok && string(v) == "null" {
+			return fmt.Errorf("%s is null; omit it or give it a value", name)
+		}
+	}
+	return nil
+}
+
 // canonicalTimestamp parses a wire timestamp and rejects any rendering
 // other than the one section 4 requires.
 //
@@ -158,6 +177,9 @@ func (p *PostRef) UnmarshalJSON(data []byte) error {
 	if err := strictUnmarshal(data, &raw); err != nil {
 		return fmt.Errorf("post: %w", err)
 	}
+	if err := rejectNullMembers(data, "title", "url", "sha256"); err != nil {
+		return fmt.Errorf("post: %w", err)
+	}
 	*p = PostRef(raw)
 	return nil
 }
@@ -190,6 +212,9 @@ func (c *ClaimRef) UnmarshalJSON(data []byte) error {
 	if err := strictUnmarshal(data, &raw); err != nil {
 		return fmt.Errorf("claim: %w", err)
 	}
+	if err := rejectNullMembers(data, "excerpt", "source_url", "status"); err != nil {
+		return fmt.Errorf("claim: %w", err)
+	}
 	*c = ClaimRef(raw)
 	return nil
 }
@@ -198,6 +223,9 @@ func (s *Signature) UnmarshalJSON(data []byte) error {
 	type signature Signature
 	var raw signature
 	if err := strictUnmarshal(data, &raw); err != nil {
+		return fmt.Errorf("signature: %w", err)
+	}
+	if err := rejectNullMembers(data, "alg", "public_key", "value"); err != nil {
 		return fmt.Errorf("signature: %w", err)
 	}
 	*s = Signature(raw)

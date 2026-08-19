@@ -162,6 +162,11 @@ reject a range whose `from` or `to` falls inside a UTF-8 character
 rather than at its start: such a range does not describe any text a
 reader can see.
 
+An optional member present with a literal `null` is not the same as an
+absent one, and MUST be rejected: every member has a type in these
+tables and `null` is not a string. The exceptions are `ai_ranges` and
+`claims`, where `null` is defined above to mean an empty list.
+
 A required member that is present but empty is not present, with the one
 exception named above (`timeline.chain_hash` over an empty timeline). A
 verifier MUST reject an empty `post.sha256`, `claims[].excerpt`,
