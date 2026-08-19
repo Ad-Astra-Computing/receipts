@@ -28,7 +28,7 @@ func TestSignNormalizesCreatedAt(t *testing.T) {
 				Type:           ManifestType,
 				Asset:          Asset{SHA256: strings.Repeat("a", 64), Size: 1, MIME: "text/markdown"},
 				ClaimGenerator: "Test/1",
-				GeneratorInfo:  GeneratorInfo{Name: "Test", Version: "1"},
+				GeneratorInfo:  GeneratorInfo{Name: "Test", Version: Optional("1")},
 				CreatedAt:      in,
 				Assertions:     []Assertion{},
 			}, key)
@@ -61,7 +61,7 @@ func TestVerifyRejectsNonWholeSecondCreatedAt(t *testing.T) {
 	key := testKey(t)
 	base, err := Build(BuildInput{
 		Asset:     Asset{SHA256: strings.Repeat("a", 64), Size: 1, MIME: "text/markdown"},
-		Generator: GeneratorInfo{Name: "Folio", Version: "0.1.0"},
+		Generator: GeneratorInfo{Name: "Folio", Version: Optional("0.1.0")},
 		CreatedAt: time.Date(2026, 7, 20, 14, 50, 51, 0, time.UTC),
 	})
 	if err != nil {

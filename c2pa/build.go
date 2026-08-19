@@ -79,7 +79,7 @@ func Build(in BuildInput) (Manifest, error) {
 		Context:        ContextURI,
 		Type:           ManifestType,
 		Asset:          in.Asset,
-		ClaimGenerator: in.Generator.Name + "/" + in.Generator.Version,
+		ClaimGenerator: in.Generator.Name + "/" + strValue(in.Generator.Version),
 		GeneratorInfo:  in.Generator,
 		CreatedAt:      created,
 		Assertions:     []Assertion{},
@@ -95,7 +95,7 @@ func Build(in BuildInput) (Manifest, error) {
 	}
 	m.Assertions = append(m.Assertions, Assertion{
 		Label: "c2pa.training-mining",
-		Data:  miningData,
+		Data:  raw(miningData),
 	})
 
 	if len(in.AIRanges) > 0 {
@@ -108,7 +108,7 @@ func Build(in BuildInput) (Manifest, error) {
 		}
 		m.Assertions = append(m.Assertions, Assertion{
 			Label: "folio.ai_ranges",
-			Data:  rangesData,
+			Data:  raw(rangesData),
 		})
 	}
 
@@ -122,8 +122,31 @@ func Build(in BuildInput) (Manifest, error) {
 	}
 	m.Assertions = append(m.Assertions, Assertion{
 		Label: "c2pa.actions",
-		Data:  actionsData,
+		Data:  raw(actionsData),
 	})
 
 	return m, nil
+}
+
+// raw wraps encoded JSON as an optional assertion payload.
+func raw(b []byte) *json.RawMessage {
+	m := json.RawMessage(b)
+	return &m
+}
+
+// strValue reads an optional string, treating absence as empty.
+func strValue(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+// optional returns a pointer to s, or nil when s is empty, for the
+// credential fields whose presence is part of the signed object.
+func optional(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

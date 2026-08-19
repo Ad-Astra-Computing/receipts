@@ -473,7 +473,7 @@ function structuralProblems(b: unknown): string[] {
         p.push(`ai_ranges[${i}] ends at or before it starts`);
       }
       str(r.model, `ai_ranges[${i}].model`);
-      if (r.when !== undefined && r.when !== null) str(r.when, `ai_ranges[${i}].when`);
+      if (r.when !== undefined) str(r.when, `ai_ranges[${i}].when`);
     }],
     ["claims", (c: Record<string, unknown>, i: number) => {
       str(c.excerpt, `claims[${i}].excerpt`, true);

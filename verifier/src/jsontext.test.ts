@@ -59,3 +59,26 @@ describe("escaped member names", () => {
     expect(jsonTextProblem(`{"schema":"a","schema_version":"b"}`)).toBeNull();
   });
 });
+
+// Every number here is an integer, and 1, 1.0 and 1e0 are the same value
+// with different spellings. JSON.parse cannot tell them apart, Go's
+// decoder refuses two of the three, so the text is where it gets caught.
+describe("number spelling", () => {
+  for (const [name, text] of [
+    ["a fractional count", `{"words":1.0}`],
+    ["an exponent", `{"words":1e0}`],
+    ["a real fraction", `{"chars":1.5}`],
+    ["a negative exponent", `{"size":2E3}`],
+  ] as const) {
+    it(`refuses: ${name}`, () => expect(jsonTextProblem(text)).not.toBeNull());
+  }
+
+  for (const [name, text] of [
+    ["plain integers", `{"words":48,"chars":261,"from":0,"to":18}`],
+    ["a negative integer", `{"offset":-3}`],
+    ["digits inside a string", `{"hash":"1.0e5 is text here"}`],
+    ["a version string", `{"claim_generator":"folio-web/0.1.102"}`],
+  ] as const) {
+    it(`accepts: ${name}`, () => expect(jsonTextProblem(text)).toBeNull());
+  }
+});

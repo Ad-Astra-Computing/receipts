@@ -51,8 +51,13 @@ type Asset struct {
 	SHA256 string `json:"sha256"`
 	Size   int64  `json:"size"`
 	MIME   string `json:"mime"`
-	Title  string `json:"title,omitempty"`
-	URL    string `json:"url,omitempty"`
+	// Pointers, not omitempty: the digest is taken over a re-encoding of
+	// this object, so absent, present-and-empty and null must each come
+	// back as themselves. With omitempty a credential signed without a
+	// title verified with `"title": ""` added, and one signed with an
+	// empty title verified with it removed.
+	Title *string `json:"title,omitempty"`
+	URL   *string `json:"url,omitempty"`
 
 	// Unknown members, preserved so the digest covers what was signed.
 	extras map[string]json.RawMessage
@@ -61,12 +66,10 @@ type Asset struct {
 // GeneratorInfo describes the tool chain that produced the manifest.
 type GeneratorInfo struct {
 	Name string `json:"name"`
-	// omitempty: a credential signed without a version must not gain one
-	// on its way through this package. Re-emitting it changes the
-	// canonical form and therefore the digest, so a credential another
-	// implementation accepts would fail here.
-	Version string `json:"version,omitempty"`
-	URL     string `json:"url,omitempty"`
+	// Pointers for the same reason as Asset.Title: presence is part of
+	// the object the signature covers.
+	Version *string `json:"version,omitempty"`
+	URL     *string `json:"url,omitempty"`
 
 	// Unknown members, preserved so the digest covers what was signed.
 	extras map[string]json.RawMessage
@@ -76,8 +79,11 @@ type GeneratorInfo struct {
 // raw JSON so a producer can extend the assertion set without this
 // package modelling every label.
 type Assertion struct {
-	Label string          `json:"label"`
-	Data  json.RawMessage `json:"data"`
+	Label string `json:"label"`
+	// A pointer so a missing `data` stays missing. Reconstructing it as
+	// null let a credential signed with `"data": null` verify after the
+	// member was deleted.
+	Data *json.RawMessage `json:"data,omitempty"`
 
 	// Unknown members, preserved so the digest covers what was signed.
 	extras map[string]json.RawMessage
@@ -188,3 +194,8 @@ func (s SignedManifest) MarshalJSON() ([]byte, error) {
 func (s SignedManifest) wireBytes() ([]byte, error) {
 	return s.MarshalJSON()
 }
+
+// Optional makes an optional credential string. Presence is part of the
+// object the signature covers, so these fields are pointers; this is the
+// ergonomic way for a producer to set one.
+func Optional(s string) *string { return &s }

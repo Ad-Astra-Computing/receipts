@@ -37,10 +37,10 @@ func buildBundle(t *testing.T, key ed25519.PrivateKey, body string) receipts.Bun
 			SHA256: assetHash,
 			Size:   int64(len(body)),
 			MIME:   "text/markdown",
-			Title:  "Keep the receipts",
-			URL:    "https://blog.example.com/post/keep-the-receipts/",
+			Title:  c2pa.Optional("Keep the receipts"),
+			URL:    c2pa.Optional("https://blog.example.com/post/keep-the-receipts/"),
 		},
-		Generator: c2pa.GeneratorInfo{Name: "Folio", Version: "0.1.0"},
+		Generator: c2pa.GeneratorInfo{Name: "Folio", Version: c2pa.Optional("0.1.0")},
 		CreatedAt: time.Date(2026, 7, 20, 14, 50, 51, 0, time.UTC),
 	})
 	if err != nil {
