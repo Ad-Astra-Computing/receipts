@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy | Receipts of thought</title>
+  <meta name="description" content="The Receipts of Thought verifier collects nothing. Receipts are checked in your browser and never uploaded, and the page is forbidden from making network requests while it verifies." />
+  <link rel="canonical" href="https://receiptsofthought.com/privacy" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta name="theme-color" content="#0b0b0d" />
+  <style>
+    :root {
+      --ink-0: #0b0b0d; --ink-1: #17171a; --bone-0: #f0efed; --bone-1: #b4b3b7; --bone-2: #85848b;
+      --hairline: rgba(240, 239, 237, 0.09); --focus: #6f6f77;
+      --font-serif: "Charter", "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--ink-0); color: var(--bone-1); font-family: var(--font-sans);
+      font-size: 1.0625rem; line-height: 1.65; max-width: 41rem; margin: 0 auto;
+      padding: 3.5rem 1.5rem 5rem;
+    }
+    .back { display: inline-block; color: var(--bone-2); font-size: 0.8125rem; text-decoration: none;
+      border-bottom: 1px solid transparent; margin-bottom: 2rem; }
+    .back:hover { color: var(--bone-0); border-color: var(--hairline); }
+    h1 { font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.01em;
+      color: var(--bone-0); font-size: 1.719rem; line-height: 1.2; margin-bottom: 0.35rem; }
+    h2 { font-family: var(--font-serif); font-weight: 500; color: var(--bone-0);
+      font-size: 1.0625rem; margin: 2.25rem 0 0.6rem; }
+    .updated { font-family: var(--font-mono); font-size: 0.656rem; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--bone-2); margin-bottom: 2.5rem; }
+    p { margin-bottom: 0.9rem; }
+    ul { margin: 0 0 0.9rem 1.25rem; }
+    li { margin-bottom: 0.4rem; }
+    a { color: var(--bone-0); text-decoration: none; border-bottom: 1px solid var(--hairline); }
+    a:hover { border-color: var(--bone-2); }
+    a:focus-visible, .back:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+    code { font-family: var(--font-mono); font-size: 0.9em; color: var(--bone-0); }
+    .rule { height: 1px; background: var(--hairline); margin: 3rem 0 1.5rem; border: 0; }
+    footer { font-size: 0.8125rem; color: var(--bone-2); display: flex; flex-wrap: wrap;
+      gap: 0.5rem 1rem; justify-content: space-between; }
+    footer a { color: var(--bone-2); border: 0; }
+    footer a:hover { color: var(--bone-0); }
+  </style>
+</head>
+<body>
+  <a href="/" class="back">&larr; Receipts of thought</a>
+
+  <h1>Privacy</h1>
+  <div class="updated">Last updated: 19 August 2026</div>
+
+  <p>The short version: this site collects nothing about you, and the
+  receipt you check never leaves your computer. That is not a promise
+  you have to take our word for, which is the point of the rest of this
+  page.</p>
+
+  <h2>What happens to a receipt you check</h2>
+  <p>Nothing leaves your machine. A file you choose is read in the
+  browser with the File API, verified with WebCrypto and then forgotten
+  when you close the tab. It is never sent anywhere, because there is
+  nowhere to send it: the verifier has no server side at all.</p>
+  <p>While the page is open it is forbidden from making any network
+  request. Its content security policy sets <code>connect-src 'none'</code>,
+  which the browser enforces regardless of what the page tries to do,
+  and you can watch that hold by disconnecting from the network and
+  checking a receipt anyway. The policy is served in
+  <a href="https://github.com/Ad-Astra-Computing/receipts/blob/main/verifier/public/_headers">the repository's <code>_headers</code> file</a>,
+  where you can read it.</p>
+
+  <h2>What we collect</h2>
+  <p>No accounts, no cookies, no local storage, no analytics, no
+  tracking scripts and no third-party embeds. We do not know who visits
+  this site or what anyone verifies.</p>
+
+  <h2>What our host sees</h2>
+  <p>The site is served as static files by Cloudflare Pages. Like any
+  web host, Cloudflare processes the ordinary metadata of an HTTP
+  request, including your IP address, user agent and the file requested,
+  in order to deliver the page and protect against abuse. That is a
+  consequence of loading any web page and it applies to the page itself,
+  not to any receipt you check afterwards. Cloudflare's handling is
+  described in <a href="https://www.cloudflare.com/privacypolicy/">its privacy policy</a>.</p>
+  <p>If you would rather not involve us or our host at all,
+  <a href="https://github.com/Ad-Astra-Computing/receipts">build the verifier yourself</a>
+  and run it locally. It is one command and the output is plain files.</p>
+
+  <h2>Children</h2>
+  <p>The site is not directed at children and collects no personal data
+  from anyone, of any age.</p>
+
+  <h2>Changes</h2>
+  <p>If this page changes, the date above changes with it, and the
+  history of every edit is public in the repository.</p>
+
+  <h2>Contact</h2>
+  <p>Questions: <a href="mailto:privacy@adastracomputing.com">privacy@adastracomputing.com</a>.
+  Security reports: <a href="mailto:security@adastracomputing.com">security@adastracomputing.com</a>.</p>
+
+  <hr class="rule" />
+  <footer>
+    <span>&copy; 2026 Ad Astra Computing, Inc.</span>
+    <span><a href="/">Verifier</a> &middot; <a href="/terms">Terms</a> &middot; <a href="https://adastracomputing.com">Ad Astra Computing</a></span>
+  </footer>
+</body>
+</html>
