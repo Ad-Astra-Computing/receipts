@@ -14,7 +14,7 @@
         # The static verifier site, for self-hosting.
         verifier = pkgs.buildNpmPackage {
           pname = "receipts-verifier";
-          version = "0.1.3";
+          version = "0.1.4";
           # The whole repo, not just verifier/: the shared rejection
           # corpus lives at testdata/rejections.json and both test suites
           # read it, so a derivation scoped to verifier/ would run the
@@ -30,7 +30,7 @@
           #   nix run nixpkgs#prefetch-npm-deps -- verifier/package-lock.json
           npmDeps = pkgs.fetchNpmDeps {
             src = ./verifier;
-            hash = "sha256-mfiGkT6c08GTn2QLWEA4oL7TqFBxWsagBzBbFfYsEy4=";
+            hash = "sha256-EV9KHdhXSmg89HtEeaX1rjBesZE2UYfZXHGRK2t0ebg=";
           };
           # npm run build typechecks and bundles; it does not run vitest,
           # so without this `nix flake check` reported a green verifier
@@ -51,7 +51,7 @@
         # vendorHash is null: standard library only.
         goModule = pkgs.buildGoModule {
           pname = "receipts";
-          version = "0.1.3";
+          version = "0.1.4";
           src = ./.;
           vendorHash = null;
           # The root package "." is listed on purpose: it holds the
