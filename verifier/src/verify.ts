@@ -668,7 +668,9 @@ async function verifyBundleInner(input: unknown, body?: string): Promise<VerifyR
 
     // The credential states the body's length; with the body in hand
     // that is checkable, and a signed number nobody compares is
-    // decoration. Go checks it in VerifyBody.
+    // decoration. Go checks it in VerifyBody. Neither side can drop it
+    // quietly: each suite holds a regression for a stated length that
+    // disagrees with the text.
     const declared = (b.credential as unknown as { asset?: { size?: number } }).asset?.size;
     checks.push({
       name: "Text is the length the credential states",
