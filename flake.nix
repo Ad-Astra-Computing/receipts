@@ -30,7 +30,7 @@
           #   nix run nixpkgs#prefetch-npm-deps -- verifier/package-lock.json
           npmDeps = pkgs.fetchNpmDeps {
             src = ./verifier;
-            hash = "sha256-EV9KHdhXSmg89HtEeaX1rjBesZE2UYfZXHGRK2t0ebg=";
+            hash = "sha256-obhoYPCdxoHBiQYuk/MGXpLSa/M1/+CAyn7Bz/NQcVU=";
           };
           # npm run build typechecks and bundles; it does not run vitest,
           # so without this `nix flake check` reported a green verifier
