@@ -95,7 +95,7 @@ func Build(in BuildInput) (Manifest, error) {
 	}
 	m.Assertions = append(m.Assertions, Assertion{
 		Label: "c2pa.training-mining",
-		Data:  raw(miningData),
+		Data:  miningData,
 	})
 
 	if len(in.AIRanges) > 0 {
@@ -108,7 +108,7 @@ func Build(in BuildInput) (Manifest, error) {
 		}
 		m.Assertions = append(m.Assertions, Assertion{
 			Label: "folio.ai_ranges",
-			Data:  raw(rangesData),
+			Data:  rangesData,
 		})
 	}
 
@@ -122,16 +122,10 @@ func Build(in BuildInput) (Manifest, error) {
 	}
 	m.Assertions = append(m.Assertions, Assertion{
 		Label: "c2pa.actions",
-		Data:  raw(actionsData),
+		Data:  actionsData,
 	})
 
 	return m, nil
-}
-
-// raw wraps encoded JSON as an optional assertion payload.
-func raw(b []byte) *json.RawMessage {
-	m := json.RawMessage(b)
-	return &m
 }
 
 // strValue reads an optional string, treating absence as empty.

@@ -5,6 +5,7 @@ package c2pa
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 // The credential's signature covers every member of the object it was
@@ -57,6 +58,22 @@ func mergeExtras(base []byte, extras map[string]json.RawMessage) ([]byte, error)
 	return json.Marshal(obj)
 }
 
+// rejectNulls refuses members present with a literal null. A pointer
+// field cannot tell null from absent, so preserving the distinction is
+// impossible; the format refuses null instead (SPEC 3.1).
+func rejectNulls(data []byte, names ...string) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	for _, name := range names {
+		if v, ok := raw[name]; ok && string(v) == "null" {
+			return fmt.Errorf("%s is null; omit it or give it a value", name)
+		}
+	}
+	return nil
+}
+
 var assetMembers = map[string]bool{"sha256": true, "size": true, "mime": true, "title": true, "url": true}
 
 func (a *Asset) UnmarshalJSON(data []byte) error {
@@ -77,6 +94,9 @@ func (a *Asset) UnmarshalJSON(data []byte) error {
 	}
 	if probe.Size == nil {
 		return errors.New("c2pa: asset.size is missing")
+	}
+	if err := rejectNulls(data, "sha256", "size", "mime", "title", "url"); err != nil {
+		return fmt.Errorf("c2pa: asset: %w", err)
 	}
 	extras, err := splitExtras(data, assetMembers)
 	if err != nil {
@@ -103,6 +123,9 @@ func (g *GeneratorInfo) UnmarshalJSON(data []byte) error {
 	var raw generator
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
+	}
+	if err := rejectNulls(data, "name", "version", "url"); err != nil {
+		return fmt.Errorf("c2pa: claim_generator_info: %w", err)
 	}
 	extras, err := splitExtras(data, generatorMembers)
 	if err != nil {
@@ -156,11 +179,24 @@ func (a *Assertion) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
+	// `data` is required (SPEC 7.0) and its value may legitimately be
+	// null, which a pointer cannot express: encoding/json sets a
+	// *json.RawMessage to nil for null, making it indistinguishable from
+	// absent. Presence is therefore checked on the raw object and the
+	// value kept verbatim.
+	var probe map[string]json.RawMessage
+	if err := json.Unmarshal(data, &probe); err != nil {
+		return err
+	}
+	if _, ok := probe["data"]; !ok {
+		return errors.New("c2pa: assertion has no data")
+	}
 	extras, err := splitExtras(data, assertionMembers)
 	if err != nil {
 		return err
 	}
 	*a = Assertion(raw)
+	a.Data = probe["data"]
 	a.extras = extras
 	return nil
 }

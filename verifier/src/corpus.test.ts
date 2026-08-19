@@ -84,13 +84,17 @@ describe("shared rejection corpus", () => {
       apply(b, c);
       const res = await verifyBundle(b);
       expect(res.ok, c.why).toBe(false);
-      if (c.expect) {
-        const failed = res.checks.filter((k) => !k.ok).map((k) => k.name.toLowerCase());
-        expect(
-          failed.some((n) => n.includes(c.expect!.toLowerCase())),
-          `refused, but not for the stated reason. Expected a failing check mentioning "${c.expect}", got: ${failed.join(", ")}`,
-        ).toBe(true);
-      }
+      // Every case names the rule that must report it. A case without
+      // one proves only that something refused the file, and every
+      // mutation also breaks the signature, so that is no proof at all.
+      expect(c.expect, `case "${c.name}" carries no expectation`).toBeTruthy();
+      const failed = res.checks
+        .filter((k) => !k.ok)
+        .map((k) => `${k.name} ${k.detail ?? ""}`.toLowerCase());
+      expect(
+        failed.some((n) => n.includes(c.expect!.toLowerCase())),
+        `refused, but not for the stated reason. Expected a failing check mentioning "${c.expect}", got: ${failed.join(" | ")}`,
+      ).toBe(true);
     });
   }
 });

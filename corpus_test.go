@@ -23,6 +23,9 @@ type rejectionCase struct {
 	// signature, so without this a case can pass on the signature check
 	// while the rule it names goes untested.
 	Expect string `json:"expect"`
+	// Where the two implementations word the same refusal differently,
+	// the Go fragment. Absent means `expect` fits both.
+	ExpectGo string `json:"expectGo"`
 	// Raw cases mutate the serialized text, for properties a parse
 	// destroys: duplicate members and lone surrogates.
 	Raw *struct {
@@ -113,7 +116,7 @@ func TestRejectionCorpus(t *testing.T) {
 				t.Fatal(err)
 			}
 			var b receipts.Bundle
-			err = json.Unmarshal(mutated, &b)
+			b, _, err = receipts.Decode(mutated)
 			if err == nil {
 				err = receipts.Verify(b)
 			}
@@ -124,47 +127,19 @@ func TestRejectionCorpus(t *testing.T) {
 			// verifier; here the equivalent refusals are the parse and
 			// signature-coverage errors, so match either the fragment or
 			// the Go wording for the same rule.
-			// `expect` names the browser's check; this side words the
-			// same rules differently, so each expectation lists the
-			// wordings that mean it. The point is only that the refusal
-			// came from the rule the case is about, not from the broken
-			// signature that every mutation also causes.
-			if c.Expect != "" {
-				got := strings.ToLower(err.Error())
-				accepted := map[string][]string{
-					"canonical": {
-						"canonical", "whole-second", "bad signature value",
-						"bad public key", "timestamp",
-					},
-					"signed fields": {"unknown field"},
-					"credential":    {"c2pa", "credential"},
-					// "receipt" means the structural pass refused it.
-					// This entry used to be missing, so every case using
-					// it silently received no assertion at all and could
-					// pass on the broken signature instead: the exact
-					// false positive the expectations exist to stop.
-					"signature": {"signature does not verify", "signature", "body does not match"},
-					"receipt": {
-						"receipts:", "checkpoint", "ai_range", "claim",
-						"timeline", "post", "signature", "cannot unmarshal",
-						"is null", "invalid character", "json:",
-					},
-				}[c.Expect]
-				if len(accepted) == 0 {
-					t.Fatalf("case %q expects %q, which this harness does not know how to check", c.Name, c.Expect)
-				}
-				if len(accepted) > 0 {
-					matched := false
-					for _, want := range accepted {
-						if strings.Contains(got, want) {
-							matched = true
-							break
-						}
-					}
-					if !matched {
-						t.Fatalf("refused %q, but not for the stated reason (%s): %v", c.Name, c.Expect, err)
-					}
-				}
+			// `expect` is a fragment the refusal must contain, naming
+			// the rule rather than a category. Loose categories let a
+			// case pass on the broken signature every mutation causes,
+			// which is the false positive these exist to stop.
+			if c.Expect == "" {
+				t.Fatalf("case %q carries no expectation, so it proves only that something refused it", c.Name)
+			}
+			want := c.Expect
+			if c.ExpectGo != "" {
+				want = c.ExpectGo
+			}
+			if !strings.Contains(strings.ToLower(err.Error()), strings.ToLower(want)) {
+				t.Fatalf("refused %q, but not for the stated reason (%q): %v", c.Name, want, err)
 			}
 		})
 	}

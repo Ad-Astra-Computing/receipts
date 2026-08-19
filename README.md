@@ -189,9 +189,15 @@ installed and skips itself when they are not.
 
 ## What a valid receipt proves
 
-A valid bundle proves that the recorded process, the credential and the
-published body have not changed since the named key signed them, and that
-they agree with one another.
+A valid bundle proves that the recorded process and the credential have
+not changed since the named key signed them, and that they agree with
+one another.
+
+The published text is a separate question. A bundle carries the text's
+hash, not the text, so checking a bundle on its own says nothing about
+the writing: there is nothing to compare it against. Hand the verifier
+the text as well and it will tell you whether that is the text that was
+signed, and it says which of the two it did.
 
 It does not prove that a human, rather than a pipeline, wrote the piece.
 No signing tool can prove intent. It also does not say whose key signed

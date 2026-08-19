@@ -126,6 +126,9 @@ func (r *AIRange) UnmarshalJSON(data []byte) error {
 	if err := strictUnmarshal(data, &w); err != nil {
 		return err
 	}
+	if err := rejectNullMembers(data, "from", "to", "model", "when"); err != nil {
+		return fmt.Errorf("ai_range: %w", err)
+	}
 	// A present-but-empty `when` is not the same as an absent one: the
 	// empty string is not a timestamp, and the TypeScript verifier
 	// refuses it, so accepting it here would split the two.
