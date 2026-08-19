@@ -13,7 +13,9 @@
 //
 // Privacy is the load-bearing design choice: the timeline is a digest,
 // per-checkpoint word and character counts plus a hash chain, never the
-// draft text. It proves a process happened and is tamper-evident,
+// draft text. It is tamper-evident: it shows that the record presented
+// here is the one that was signed, which is not the same as showing the
+// work happened that way, since an author writes the record. All of it
 // without publishing drafts the author never chose to share.
 //
 // The package is pure. It holds the wire types, the signing digest,

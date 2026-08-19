@@ -7,6 +7,12 @@ import { tamper, type Tamper } from "./tamper";
 // cannot fail at the edge. Swap this file to change the demo receipt.
 import sampleData from "./sample.receipts.json";
 
+
+// Eight megabytes. The sample receipt is a few kilobytes and a long
+// session's timeline is still counts and hashes, so this is orders of
+// magnitude of headroom rather than a limit anyone meets.
+const MAX_RECEIPT_BYTES = 8 * 1024 * 1024;
+
 const inner = () => document.getElementById("receipt-inner")!;
 const card = () => document.getElementById("receipt-card")!;
 
@@ -69,6 +75,15 @@ function extract(data: unknown): { bundle: Bundle; body?: string; problem?: stri
 async function loadFile(f: File) {
   card().classList.add("has-file");
   try {
+    // A receipt is a small JSON file: counts, hashes and signatures, with
+    // no drafts in it. Reading an arbitrarily large file into memory
+    // before finding out it is not one freezes the tab, and the honest
+    // ceiling is far above anything a real receipt reaches.
+    if (f.size > MAX_RECEIPT_BYTES) {
+      inner().setAttribute("aria-busy", "false");
+      inner().textContent = `${f.name} is ${Math.round(f.size / 1e6)} MB. A receipt is a small JSON file, so this is not one.`;
+      return;
+    }
     // Not f.text(): that replaces invalid UTF-8 with U+FFFD, so a file
     // Go refuses as malformed would be silently repaired here and then
     // validated in its repaired form.

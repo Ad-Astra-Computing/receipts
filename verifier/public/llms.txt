@@ -6,7 +6,8 @@ When text is cheap to generate, a clean final draft is no longer evidence that s
 
 ## What a valid receipt proves
 
-- Nothing in the receipt was altered after it was signed: the title, the text, the composition timeline, the disclosed AI passages and the sourced claims.
+- Nothing in the receipt was altered after it was signed: the title, the text's fingerprint, the composition timeline, the disclosed AI passages and the sourced claims.
+- Whether the published text is the text that was signed, when you hand the verifier that text as well. A receipt carries a fingerprint rather than the writing, so checked on its own it leaves that question open, and the page says which of the two it did.
 - The composition timeline is exactly the one that was signed: no checkpoint has been reordered, inserted or removed since.
 - The embedded C2PA-aligned content credential carries its own valid signature and binds the same text and the same key as the receipt around it.
 

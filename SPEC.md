@@ -26,7 +26,7 @@ signs them as a unit:
    the SHA-256 of its bytes.
 2. A C2PA-aligned content credential, itself signed, binding the same
    signing key to the same body.
-3. The AI-authored spans the author chose to disclose, as character
+3. The AI-authored spans the author chose to disclose, as UTF-8 byte
    ranges with an optional model name and timestamp.
 4. The factual claims the author sourced, as an excerpt, a source URL
    and a status.
@@ -50,7 +50,8 @@ Publishing intermediate drafts would expose
 material the author never chose to share, and would make the format
 hostile to adopt. Full replay of the drafts stays local, in the tool
 that produced the bundle. What travels with the published piece is
-proof that the process occurred, not the process itself.
+evidence that the record has not changed since it was signed, not
+   proof that the work happened as recorded and not the process itself.
 
 ## 3. Bundle structure
 
@@ -385,7 +386,7 @@ follows C2PA's data model, and departs from C2PA's serialization and
 trust model in the ways this section sets out. C2PA (the Coalition for
 Content Provenance and Authenticity) is the industry standard for
 binding provenance assertions to media, and is being standardized as
-ISO/DIS 22144, a draft international standard. The receipts bundle does
+ISO 22144, where it is still under development. The receipts bundle does
 not replace it. It carries the credential inside a wrapper that adds the
 composition-process assertions C2PA does not model: the disclosed AI
 ranges, the sourced claims and the tamper-evident timeline digest.
