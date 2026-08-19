@@ -1,5 +1,5 @@
-/* receiptsofthought.com — ink-and-paper ledger, composed on phi.
-   Palette + type reuse Folio's brand tokens. */
+/* receiptsofthought.com: an ink-and-paper ledger, composed on phi.
+   Palette and type reuse Folio's brand tokens. */
 :root {
   /* Dark page: neutral near-blacks, no warm cast. No accent hue. */
   --ink-0: #0b0b0d;
