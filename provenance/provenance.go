@@ -63,7 +63,7 @@ type Event struct {
 	// TargetID references a previous event (KindRemove, KindHumanEdit).
 	TargetID string `json:"targetId,omitempty"`
 	// Hash is the running chain value: SHA-256 hex of
-	// (prev || canonical-json(event without Hash)).
+	// (prev || a deterministic encoding of the event without Hash (see canonicalize below: maps become sorted alternating key/value arrays, which is NOT RFC 8785 canonical JSON)).
 	Hash string `json:"hash"`
 }
 
