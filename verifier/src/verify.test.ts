@@ -27,7 +27,7 @@ describe("verifyBundle against a Go-signed fixture", () => {
       expect(c.ok, `${c.name}: ${c.detail ?? ""}`).toBe(true);
     }
     expect(res.ok).toBe(true);
-    expect(res.fingerprint).toMatch(/^[0-9a-f]{16}$/);
+    expect(res.fingerprint).toMatch(/^[0-9a-f]{32}$/);
   });
 
   it("rejects a tampered body", async () => {

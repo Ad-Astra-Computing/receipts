@@ -142,7 +142,11 @@ function b64urlToBytes(s: string): Uint8Array {
 }
 
 // The signing digest, per SPEC.md section 6.
-async function signingDigest(b: Bundle): Promise<Uint8Array> {
+// Exported because a producer needs exactly these bytes, and the only
+// way to prove two languages agree on them is to let one sign what the
+// other verifies. Kept here rather than duplicated so the definition
+// cannot drift from the one the verifier enforces.
+export async function signingDigest(b: Bundle): Promise<Uint8Array> {
   const parts: Uint8Array[] = [];
   const add = async (s: string) => {
     parts.push(await sha256(enc.encode(s)));
@@ -191,7 +195,7 @@ async function signingDigest(b: Bundle): Promise<Uint8Array> {
 // deleted.
 export const CRED_SIG_TAG = "folio.c2pa.sig.v1";
 
-async function credentialDigest(cred: Credential): Promise<Uint8Array> {
+export async function credentialDigest(cred: Credential): Promise<Uint8Array> {
   const copy = structuredClone(cred) as {
     signature?: { value?: unknown };
     [k: string]: unknown;
@@ -699,11 +703,21 @@ async function verifyBundleInner(input: unknown, body?: string): Promise<VerifyR
     });
   }
 
-  // Fingerprint: first 8 bytes of sha256 over the raw public key,
-  // shown to the reader as a short, stable identifier for the signer.
+  // Fingerprint: the first 16 bytes of sha256 over the raw public key,
+  // shown to the reader as a stable identifier for the signer.
+  //
+  // 128 bits, not 64. This is offered as the thing a reader compares
+  // between two receipts to decide whether the same key signed both,
+  // and at 64 bits finding a second key with a chosen fingerprint is
+  // work somebody could actually do. It costs eight more bytes on
+  // screen and removes the question.
+  //
+  // It is a convenience, never the authority: the full public key is in
+  // the receipt, and it is what the signature is actually checked
+  // against. The renderer shows the whole key alongside this.
   let fp = "";
   try {
-    fp = toHex(await sha256(b64urlToBytes(b.signature.public_key))).slice(0, 16);
+    fp = toHex(await sha256(b64urlToBytes(b.signature.public_key))).slice(0, 32);
   } catch {
     fp = "";
   }

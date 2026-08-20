@@ -185,13 +185,29 @@ The packages:
 | `history` | the composition snapshot and `DigestTimeline` |
 | `claims` | the sourced-claim wire types, validation and a canonical digest |
 
-`go test ./...` signs a bundle in Go and runs the TypeScript verifier's
-suite against it, and both suites additionally apply a shared corpus of
-inputs that each must refuse (`testdata/rejections.json`). Between them
-they cover agreement on a valid bundle and agreement on the invalid
-inputs listed in that file, which is what has actually been checked
-rather than agreement in general. It needs the verifier's dependencies
-installed and skips itself when they are not.
+`go test ./...` runs the interop gate in both directions: Go signs a
+bundle and the TypeScript verifier checks it, and the TypeScript
+implementation signs one that Go must accept through the same `Decode`
+path a verifier uses on a file. Both suites additionally apply a shared
+corpus of inputs that each must refuse (`testdata/rejections.json`).
+Between them they cover agreement on a valid bundle in either
+direction and agreement on the invalid inputs listed in that file,
+which is what has actually been checked rather than agreement in
+general. The gate needs the verifier's dependencies installed and skips
+itself when they are not.
+
+There is also a fuzz target over `Decode`, the entry point that meets a
+file somebody else wrote. `go test` runs its seed corpus in
+milliseconds; to fuzz for real:
+
+```sh
+go test -run XXX -fuzz FuzzDecodeNeverPanics -fuzztime 5m .
+```
+
+`./scripts/hooks/install` points git at a pre-commit hook that fuzzes
+for eight seconds when a commit touches Go files. It is deliberately
+brief: a hook that costs half a minute is a hook people disable. Skip a
+run with `FUZZ_SKIP=1`, or lengthen it with `FUZZ_SECONDS=60`.
 
 ## What a valid receipt proves
 

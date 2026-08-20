@@ -72,3 +72,62 @@ func TestGoSignedBundleVerifiesInTypeScript(t *testing.T) {
 	}
 	t.Logf("verifier suite against the Go-signed fixture:\n%s", out)
 }
+
+// TestTypeScriptSignedBundleVerifiesInGo is the other direction, and it
+// is the one that was missing.
+//
+// The test above proves the browser accepts what Go produces. That says
+// nothing about whether Go accepts what the browser produces, and the
+// specification invites people to write producers in whatever language
+// they like. A canonicalization or digest difference that only shows up
+// when TypeScript is the signer would have been invisible to a gate
+// that only ever ran one way.
+func TestTypeScriptSignedBundleVerifiesInGo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping the Node interop gate in short mode")
+	}
+	npm, err := exec.LookPath("npm")
+	if err != nil {
+		t.Skip("npm is not on PATH")
+	}
+	if _, err := os.Stat(filepath.Join("verifier", "node_modules", "vitest")); err != nil {
+		t.Skip("verifier dependencies are not installed (run: cd verifier && npm ci)")
+	}
+
+	fixture := filepath.Join(t.TempDir(), "ts-signed.json")
+	gen := exec.Command(npm, "run", "--silent", "test:produce")
+	gen.Dir = "verifier"
+	gen.Env = append(os.Environ(), "RECEIPTS_TS_FIXTURE="+fixture)
+	if out, err := gen.CombinedOutput(); err != nil {
+		t.Fatalf("produce a TypeScript-signed bundle: %v\n%s", err, out)
+	}
+
+	data, err := os.ReadFile(fixture)
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+	var parsed struct {
+		Bundle json.RawMessage `json:"bundle"`
+		Body   string          `json:"body"`
+	}
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		t.Fatalf("parse fixture: %v", err)
+	}
+
+	// Through Decode, the same entry point a verifier uses on a file,
+	// so the strict parse rules apply rather than a lenient unmarshal.
+	envelope, err := json.Marshal(map[string]any{
+		"bundle": json.RawMessage(parsed.Bundle),
+		"body":   parsed.Body,
+	})
+	if err != nil {
+		t.Fatalf("re-marshal envelope: %v", err)
+	}
+	bundle, body, err := receipts.Decode(envelope)
+	if err != nil {
+		t.Fatalf("Go refused a bundle the TypeScript implementation signed: %v", err)
+	}
+	if err := receipts.VerifyBody(bundle, body); err != nil {
+		t.Fatalf("Go failed to verify a TypeScript-signed bundle against its body: %v", err)
+	}
+}
