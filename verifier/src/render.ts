@@ -374,7 +374,17 @@ export function renderReceipt(
   // Title + fingerprint (ledger header)
   const head = el("div", "r-head");
   head.append(el("div", "r-title", bundle.post.title || "Untitled"));
-  head.append(el("div", "r-key", `signed ${res.fingerprint || "unknown"}`));
+  // Grouped in fours: a reader comparing two of these is doing it by
+  // eye, and an unbroken 32-character run is the shape people misread.
+  // The full public key rides along in the title, since the fingerprint
+  // is a convenience and the key is the thing that was checked.
+  const grouped = res.fingerprint ? (res.fingerprint.match(/.{1,4}/g) ?? []).join(" ") : "";
+  const keyLine = el("div", "r-key", `signed ${grouped || "unknown"}`);
+  const fullKey = bundle?.signature?.public_key;
+  if (typeof fullKey === "string" && fullKey !== "") {
+    keyLine.title = `Signing key (base64url): ${fullKey}\nThe fingerprint above is SHA-256 of that key, first 16 bytes.`;
+  }
+  head.append(keyLine);
   inner.append(head);
 
   // Checks

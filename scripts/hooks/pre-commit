@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Fuzz Decode briefly before a commit that touches the Go parser.
+#
+# Installed by: ./scripts/hooks/install
+#
+# Deliberately small. A hook that costs thirty seconds is a hook people
+# turn off, and the seed corpus already runs in `go test` in
+# milliseconds, so CI is covered without this. What this adds is a few
+# seconds of live mutation on the code most likely to hide a crash: the
+# parser a stranger's file reaches first.
+#
+# Only runs when Go files are staged. Set FUZZ_SECONDS to change the
+# budget, FUZZ_SKIP=1 to skip once, or commit with --no-verify.
+set -euo pipefail
+
+if [ "${FUZZ_SKIP:-0}" = "1" ]; then
+  exit 0
+fi
+
+if ! git diff --cached --name-only --diff-filter=ACM | grep -q '\.go$'; then
+  exit 0
+fi
+
+if ! command -v go >/dev/null 2>&1; then
+  echo "pre-commit: go is not on PATH, skipping the fuzz pass." >&2
+  exit 0
+fi
+
+seconds="${FUZZ_SECONDS:-8}"
+echo "pre-commit: fuzzing Decode for ${seconds}s (FUZZ_SKIP=1 to skip)"
+
+# A crash writes its input under testdata/fuzz/, which is what makes a
+# failure reproducible rather than a one-off scare.
+if ! go test -run XXX -fuzz FuzzDecodeNeverPanics -fuzztime "${seconds}s" . >/tmp/folio-fuzz.log 2>&1; then
+  echo >&2
+  echo "pre-commit: fuzzing found an input that Decode does not survive." >&2
+  echo "The failing input is saved under testdata/fuzz/ and replays with:" >&2
+  echo "  go test -run FuzzDecodeNeverPanics ." >&2
+  echo >&2
+  tail -30 /tmp/folio-fuzz.log >&2
+  exit 1
+fi

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Point git at the hooks in this repository.
+#
+#   ./scripts/hooks/install
+#
+# Uses core.hooksPath rather than copying into .git/hooks, so the hooks
+# stay under version control and everyone gets the same ones.
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+git config core.hooksPath scripts/hooks
+echo "hooks installed: $(git config --get core.hooksPath)"
