@@ -59,10 +59,16 @@
   page.</p>
 
   <h2>What happens to a receipt you check</h2>
-  <p>Nothing leaves your machine. A file you choose is read in the
-  browser with the File API, verified with WebCrypto and then forgotten
-  when you close the tab. It is never sent anywhere, because there is
-  nowhere to send it: the verifier has no server side at all.</p>
+  <p>The receipt you check never leaves your machine. A file you choose
+  is read in the browser with the File API, verified with WebCrypto and
+  then forgotten when you close the tab. There is no application backend
+  to send it to: this page is static files, and checking a receipt calls
+  nothing.</p>
+  <p>Loading the page is a different matter, and saying "nothing leaves
+  your machine" would gloss over it. Fetching these files is an ordinary
+  web request to the host described below, exactly like any other page.
+  What that host cannot see is the receipt, because checking it never
+  becomes a request.</p>
   <p>While the page is open it is forbidden from making any network
   request. Its content security policy sets <code>connect-src 'none'</code>,
   which the browser enforces regardless of what the page tries to do,

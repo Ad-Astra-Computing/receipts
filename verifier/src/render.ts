@@ -159,7 +159,13 @@ function curve(bundle: Bundle): HTMLElement {
   const words = cps.length ? cps[cps.length - 1].words : 0;
   svg.setAttribute("aria-label", `Composition curve: ${cps.length} checkpoints ending at ${words} words.`);
   if (cps.length >= 2) {
-    const maxW = Math.max(1, ...cps.map((c) => c.words));
+    // A loop, not Math.max(1, ...words). Spreading passes one argument
+    // per checkpoint, and a receipt is a file a stranger hands you: at
+    // the current size cap it stays under the engine's argument limit,
+    // but that is two unrelated limits happening to be compatible, and
+    // one of them is in someone else's engine. A loop has no ceiling.
+    let maxW = 1;
+    for (const c of cps) if (c.words > maxW) maxW = c.words;
     const pts = cps.map((c, i) => ({
       x: (i / (cps.length - 1)) * 100,
       y: 100 - (c.words / maxW) * 78 - 10,
@@ -208,16 +214,41 @@ function curve(bundle: Bundle): HTMLElement {
   thead.append(htr);
   table.append(thead);
   const tb = el("tbody");
-  cps.forEach((c, i) => {
+  // One row per checkpoint, up to a limit. A hostile receipt can carry
+  // tens of thousands of checkpoints inside the size cap, and building
+  // that many rows freezes the tab of the person checking it. The cap
+  // is generous next to any real writing session, and when it bites the
+  // table says so rather than quietly showing a prefix as if it were
+  // the whole thing.
+  const shown = Math.min(cps.length, MAX_RENDERED_CHECKPOINTS);
+  for (let i = 0; i < shown; i++) {
     const tr = el("tr");
     tr.append(el("td", undefined, String(i + 1)));
-    tr.append(el("td", undefined, String(c.words)));
+    tr.append(el("td", undefined, String(cps[i]!.words)));
     tb.append(tr);
-  });
+  }
   table.append(tb);
+  if (cps.length > shown) {
+    const note = el(
+      "caption",
+      undefined,
+      `Showing the first ${shown} of ${cps.length} checkpoints. All ${cps.length} were verified; only the table is shortened.`,
+    );
+    table.append(note);
+  }
   fig.append(table);
   return fig;
 }
+
+/**
+ * How many checkpoint rows to build for the screen-reader table.
+ *
+ * Verification always covers every checkpoint; this bounds only what is
+ * put in the DOM. A long real session produces a few hundred, so this
+ * is far above anything a writer generates and far below the tens of
+ * thousands a crafted file can carry.
+ */
+const MAX_RENDERED_CHECKPOINTS = 2000;
 
 // stripFrontmatter removes a leading TOML/YAML frontmatter block so the
 // receipt shows the prose a reader actually sees, not raw `+++ ... +++`.

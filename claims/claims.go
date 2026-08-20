@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// Package claims holds the wire types for a sourced factual claim: a
+// Package claims holds a producer's model of a sourced factual claim: a
 // marked excerpt, the source URL it cites, and the status of that
 // source the last time it was checked.
+//
+// This is the producer side, not the wire format. The bundle's own
+// claim type is receipts.ClaimRef, and the format is deliberately
+// looser than this package: SPEC section 3.1 makes `status` free text
+// with no enumeration. Nothing here is normative for anyone writing a
+// verifier.
 //
 // The package is pure. Fetching a source, storing a ledger and
 // scheduling re-checks are the producer's business; what lives here is
@@ -20,6 +26,17 @@ import (
 )
 
 // Status of a claim's source verification.
+//
+// These four values are this PRODUCER's vocabulary, not the format's.
+// SPEC section 3.1 makes `status` free text, defines no enumeration and
+// forbids a verifier from inferring one, precisely so that a producer
+// with a richer or poorer notion of checking can say what it means. A
+// bundle carrying "stale" or "" or "verified-by-hand" is valid and a
+// verifier must accept it.
+//
+// Validate below refuses anything outside this set because a producer
+// may hold itself to a stricter rule than the format requires. Nothing
+// here constrains what a receipt may contain.
 type Status string
 
 const (
@@ -34,7 +51,8 @@ const (
 	StatusUnreachable Status = "unreachable"
 )
 
-// Valid reports whether s is a status this format defines.
+// Valid reports whether s is one of the four statuses THIS PACKAGE
+// defines. The format defines none: see the Status doc comment.
 func (s Status) Valid() bool {
 	switch s {
 	case StatusUnchecked, StatusOK, StatusChanged, StatusUnreachable:

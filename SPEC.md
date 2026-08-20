@@ -537,7 +537,16 @@ Step 5 MUST NOT be able to throw: malformed credential input rejects the
 bundle rather than aborting verification.
 
 When the verifier is also given the published body, it MUST additionally
-confirm that the SHA-256 of the body equals `post.sha256`.
+confirm that the SHA-256 of the body equals `post.sha256`, and that the
+body's length in bytes equals `credential.asset.size` (section 7.0).
+
+The second of those is easy to miss, so it is spelled out here as well
+as in the credential table: step 5b says a verifier makes no comparison
+where the outer bundle carries no matching field, and the outer bundle
+has no size member. That rule is about comparing the credential against
+the bundle. It does not excuse a verifier that holds the body from
+checking the length the credential states, any more than it excuses one
+from checking the hash.
 
 A verifier MUST NOT consult any network service to perform these
 checks. Every input it needs is in the bundle and, optionally, the body.
