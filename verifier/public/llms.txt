@@ -31,7 +31,7 @@ Open [receiptsofthought.com](https://receiptsofthought.com/) and drop the `.rece
 
 - The verifier: [receiptsofthought.com](https://receiptsofthought.com/) checks a `.receipts.json` bundle in the browser.
 - The format and verifier source: [github.com/Ad-Astra-Computing/receipts](https://github.com/Ad-Astra-Computing/receipts), the open Apache-2.0 trust core, including the receipts format [specification](https://github.com/Ad-Astra-Computing/receipts/blob/main/SPEC.md), the Ed25519 signing scheme, a Go module and the client-side verifier. The Go module is `github.com/Ad-Astra-Computing/receipts`.
-- Folio: the desktop writing app for macOS and Linux that produces receipts as you write. Folio itself is proprietary; the format and verifier it produces receipts for are not, which is why a receipt can be checked without it.
+- Folio: the desktop writing app for macOS and Linux that produces receipts as you write. Checking a receipt requires neither Folio nor any trust in it. The format is specified in the open and the verifier is Apache-2.0, so a reader holding the file and a browser already has everything the check needs.
 
 ## Terms and privacy
 
