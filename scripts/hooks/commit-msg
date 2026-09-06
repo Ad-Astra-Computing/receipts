@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Commit messages are checked by the Ad Astra standard's own hook.
+set -uo pipefail
+for candidate in "${ADASTRA_HOOKS:-}" "$(git rev-parse --show-toplevel)/../ad-astra-project-skeleton/hooks"; do
+  if [ -n "$candidate" ] && [ -f "$candidate/check-commit-msg.sh" ]; then
+    exec "$candidate/check-commit-msg.sh" "$1"
+  fi
+done
+exit 0

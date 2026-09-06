@@ -13,6 +13,19 @@
 # budget, FUZZ_SKIP=1 to skip once, or commit with --no-verify.
 set -euo pipefail
 
+# The Ad Astra content checks run first: invisible characters, prose
+# tells, secrets, stray files. Point ADASTRA_HOOKS at a checkout of the
+# standard. Outside contributors will not have it, and the fuzz pass
+# below still runs.
+for candidate in "${ADASTRA_HOOKS:-}" "$(git rev-parse --show-toplevel)/../ad-astra-project-skeleton/hooks"; do
+  if [ -n "$candidate" ] && [ -d "$candidate" ]; then
+    for check in check-invisible check-prose check-secrets check-stray; do
+      "$candidate/$check.sh" || exit 1
+    done
+    break
+  fi
+done
+
 if [ "${FUZZ_SKIP:-0}" = "1" ]; then
   exit 0
 fi
