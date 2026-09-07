@@ -1,0 +1,6 @@
+Contact: mailto:security@adastracomputing.com
+Expires: 2027-09-07T00:00:00Z
+Preferred-Languages: en
+Canonical: https://receiptsofthought.com/.well-known/security.txt
+Policy: https://adastracomputing.com/privacy
+Acknowledgments: https://github.com/Ad-Astra-Computing
