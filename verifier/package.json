@@ -15,9 +15,9 @@
     "test:produce": "vitest run src/produce.test.ts"
   },
   "devDependencies": {
-    "jsdom": "^30.0.1",
+    "jsdom": "^30.1.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2",
+    "vite": "^8.3.0",
     "vitest": "^4.1.11"
   }
 }
